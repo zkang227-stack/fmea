@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adhesive FMEA Central Database - Enterprise Master Vault</title>
+    <meta name="description" content="Central Master Database Vault for Adhesive Manufacturing FMEA. Query, filter, audit, and export all DFMEA, PFMEA, Control Plans, and History Library records.">
+    <link rel="stylesheet" href="style.css">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SheetJS CDN for direct Excel / CSV exporting -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .db-header {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color-light);
+            padding: 0.85rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .db-title-group {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        }
+
+        .db-badge-logo {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+            color: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+        }
+
+        .db-title-text h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .db-title-text p {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin: 0.2rem 0 0 0;
+        }
+
+        .db-container {
+            flex: 1;
+            padding: 1.75rem 2rem;
+            max-width: 1600px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* KPI Dashboard Stats Bar */
+        .db-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .db-kpi-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color-light);
+            border-radius: 14px;
+            padding: 1.1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            box-shadow: 0 4px 14px -2px rgba(99, 102, 241, 0.05), 0 2px 6px -2px rgba(15, 23, 42, 0.03);
+            transition: all 0.2s ease;
+        }
+
+        .db-kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(99, 102, 241, 0.08);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .db-kpi-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(99, 102, 241, 0.1);
+            color: #4f46e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .db-kpi-icon.crit {
+            background: rgba(239, 68, 68, 0.08);
+            color: #ef4444;
+        }
+
+        .db-kpi-icon.success {
+            background: rgba(16, 185, 129, 0.08);
+            color: #10b981;
+        }
+
+        .db-kpi-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .db-kpi-val {
+            font-size: 1.6rem;
+            font-weight: 700;
+            line-height: 1;
+            color: var(--text-primary);
+        }
+
+        .db-kpi-lbl {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-top: 0.3rem;
+        }
+
+        /* Controls & Filter Bar */
+        .db-controls-bar {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color-light);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            box-shadow: var(--card-shadow);
+        }
+
+        /* Database Tabs Navigation */
+        .db-nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 2px solid var(--border-color-light);
+            padding-bottom: 0.5rem;
+            overflow-x: auto;
+        }
+
+        .db-tab-btn {
+            padding: 0.55rem 1rem;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            font-family: var(--font-family);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .db-tab-btn:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .db-tab-btn.active {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+
+        .db-tab-count {
+            background-color: rgba(0,0,0,0.06);
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.75rem;
+        }
+
+        /* High Resolution Print & PDF Export Styles */
+        @media print {
+            .db-header .action-buttons,
+            .db-controls-bar,
+            .db-nav-tabs,
+            .db-kpi-grid {
+                display: none !important;
+            }
+
+            body {
+                background-color: white !important;
+                color: black !important;
+            }
+
+            .db-header {
+                box-shadow: none !important;
+                border-bottom: 2px solid #0f172a !important;
+                padding: 0 0 1rem 0 !important;
+            }
+
+            .db-container {
+                padding: 1rem 0 !important;
+                max-width: 100% !important;
+            }
+
+            .grid-container {
+                border: none !important;
+                box-shadow: none !important;
+            }
+
+            .table-wrapper {
+                max-height: none !important;
+                overflow: visible !important;
+            }
+
+            .fmea-table th {
+                background-color: #f1f5f9 !important;
+                color: #0f172a !important;
+                border: 1px solid #cbd5e1 !important;
+            }
+
+            .fmea-table td {
+                border: 1px solid #e2e8f0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Toolbar -->
+    <header class="db-header" style="justify-content: flex-end; padding: 0.75rem 2rem;">
+        <div class="action-buttons" style="display: flex; align-items: center; gap: 0.5rem;">
+            <!-- Gentle Sweet Interlink Button to return to FMEA Portal -->
+            <a href="index.html" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; padding: 0.45rem 1rem; border-radius: 20px; text-decoration: none; color: #4f46e5; border: 1px solid #c7d2fe; background: #eef2ff; font-weight: 600; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08); transition: all 0.2s ease;" title="Return to FMEA Workspace Portal">
+                <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i>
+                <span>FMEA Portal</span>
+            </a>
+            <!-- 1 Consolidated Drop-down Select Action Bar -->
+            <div style="position: relative; display: inline-flex; align-items: center;">
+                <select id="select-db-actions" class="gentle-select-bar" style="font-size: 0.8rem; padding: 0.45rem 1.1rem; border-radius: 20px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); cursor: pointer; outline: none; appearance: none; -webkit-appearance: none; font-weight: 600; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.05); transition: all 0.2s ease;">
+                    <option value="" disabled selected>⚡ Master Database Actions ▾</option>
+                    <option value="return_portal">⬅️ Return to FMEA Portal</option>
+                    <option value="export_pdf">🖨️ Export PDF Report</option>
+                    <option value="export_json">📥 Export Master Database (JSON)</option>
+                    <option value="export_excel">📄 Export All to Excel</option>
+                    <option value="import_json">📤 Restore Backup (.json)</option>
+                </select>
+            </div>
+
+            <!-- Hidden legacy elements to preserve event listener bindings -->
+            <div style="display: none;">
+                <button id="btn-db-export-pdf"></button>
+                <button id="btn-db-export-json"></button>
+                <button id="btn-db-export-excel"></button>
+                <button id="btn-db-import-json"></button>
+            </div>
+            <input type="file" id="db-file-input" accept=".json" style="display: none;">
+        </div>
+    </header>
+
+    <!-- Main Vault Container -->
+    <main class="db-container">
+        
+        <!-- KPI Dashboard Summary -->
+        <section class="db-kpi-grid">
+            <div class="db-kpi-card">
+                <div class="db-kpi-icon">
+                    <i data-lucide="layers"></i>
+                </div>
+                <div class="db-kpi-info">
+                    <span class="db-kpi-val" id="kpi-total-records">0</span>
+                    <span class="db-kpi-lbl">Total Master Records</span>
+                </div>
+            </div>
+            <div class="db-kpi-card">
+                <div class="db-kpi-icon success">
+                    <div style="font-weight: 700; font-size: 1.1rem;">DF</div>
+                </div>
+                <div class="db-kpi-info">
+                    <span class="db-kpi-val" id="kpi-dfmea-count">0</span>
+                    <span class="db-kpi-lbl">Design FMEA Items</span>
+                </div>
+            </div>
+            <div class="db-kpi-card">
+                <div class="db-kpi-icon">
+                    <div style="font-weight: 700; font-size: 1.1rem;">PF</div>
+                </div>
+                <div class="db-kpi-info">
+                    <span class="db-kpi-val" id="kpi-pfmea-count">0</span>
+                    <span class="db-kpi-lbl">Process FMEA Steps</span>
+                </div>
+            </div>
+            <div class="db-kpi-card">
+                <div class="db-kpi-icon">
+                    <i data-lucide="file-check"></i>
+                </div>
+                <div class="db-kpi-info">
+                    <span class="db-kpi-val" id="kpi-cp-count">0</span>
+                    <span class="db-kpi-lbl">Control Plan Specs</span>
+                </div>
+            </div>
+            <div class="db-kpi-card">
+                <div class="db-kpi-icon crit">
+                    <i data-lucide="alert-triangle"></i>
+                </div>
+                <div class="db-kpi-info">
+                    <span class="db-kpi-val" id="kpi-high-risk-count">0</span>
+                    <span class="db-kpi-lbl">High Risk Items (S≥8 or RPN≥100)</span>
+                </div>
+            </div>
+            <div class="db-kpi-card">
+                <div class="db-kpi-icon">
+                    <i data-lucide="book-marked"></i>
+                </div>
+                <div class="db-kpi-info">
+                    <span class="db-kpi-val" id="kpi-lib-count">0</span>
+                    <span class="db-kpi-lbl">History Library References</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search & Query Filter Bar -->
+        <section class="db-controls-bar">
+            <div class="search-wrapper" style="max-width: 450px;">
+                <i data-lucide="search" class="search-icon"></i>
+                <input type="text" id="db-search" class="search-input" placeholder="Global search across all master database records...">
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <label for="db-filter-family" style="font-size: 0.82rem; font-weight: 600; color: var(--text-secondary);">Family Scope:</label>
+                <select id="db-filter-family" class="filter-select">
+                    <option value="all">All Product & Process Families</option>
+                    <option value="Epoxy Adhesives">Epoxy Adhesives</option>
+                    <option value="Polyurethane Adhesives">Polyurethane Adhesives</option>
+                    <option value="Acrylic & Cyanoacrylate">Acrylic & Cyanoacrylate</option>
+                    <option value="Silicone & UV-Curable">Silicone & UV-Curable</option>
+                    <option value="Hot Melt Adhesives">Hot Melt Adhesives</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Database Section Tabs Navigation -->
+        <nav class="db-nav-tabs">
+            <button class="db-tab-btn active" data-dbtab="dfmea">
+                <i data-lucide="layers" style="width: 16px; height: 16px;"></i>
+                <span>Design FMEA (DFMEA)</span>
+                <span class="db-tab-count" id="cnt-dfmea">0</span>
+            </button>
+            <button class="db-tab-btn" data-dbtab="pfmea">
+                <i data-lucide="activity" style="width: 16px; height: 16px;"></i>
+                <span>Process FMEA (PFMEA)</span>
+                <span class="db-tab-count" id="cnt-pfmea">0</span>
+            </button>
+            <button class="db-tab-btn" data-dbtab="control_plans">
+                <i data-lucide="file-check-2" style="width: 16px; height: 16px;"></i>
+                <span>Control Plans</span>
+                <span class="db-tab-count" id="cnt-cp">0</span>
+            </button>
+            <button class="db-tab-btn" data-dbtab="library">
+                <i data-lucide="book-marked" style="width: 16px; height: 16px;"></i>
+                <span>History Library</span>
+                <span class="db-tab-count" id="cnt-lib">0</span>
+            </button>
+            <button class="db-tab-btn" data-dbtab="formulations">
+                <i data-lucide="flask-conical" style="width: 16px; height: 16px;"></i>
+                <span>Formulation Projects</span>
+                <span class="db-tab-count" id="cnt-form">0</span>
+            </button>
+            <button class="db-tab-btn" data-dbtab="audit">
+                <i data-lucide="history" style="width: 16px; height: 16px;"></i>
+                <span>System Security & Audit Logs</span>
+                <span class="db-tab-count" id="cnt-audit">0</span>
+            </button>
+        </nav>
+
+        <!-- Table Master Grid Container -->
+        <section class="grid-container">
+            <div class="table-wrapper">
+                <table class="fmea-table" id="db-table">
+                    <thead id="db-thead">
+                        <!-- Dynamic Header -->
+                    </thead>
+                    <tbody id="db-tbody">
+                        <!-- Dynamic Body -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="db-empty-state" class="table-empty-state" style="display: none;">
+                <div class="empty-icon">🗄️</div>
+                <h3 class="empty-title">No matching records found in database</h3>
+                <p class="empty-subtitle">Try adjusting your global search filter or select another dataset tab.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Database Script Logic -->
+    <script>
+        // Data Store
+        let masterDFMEA = [];
+        let masterPFMEA = [];
+        let masterControlPlans = [];
+        let masterLibrary = [];
+        let masterFormulations = [];
+        let masterAuditLogs = [];
+        let currentTab = "dfmea";
+
+        // Initialize Database Web Page
+        document.addEventListener("DOMContentLoaded", () => {
+            loadAllMasterDatabaseRecords();
+            setupEventListeners();
+            renderActiveTab();
+            if (window.lucide) lucide.createIcons();
+        });
+
+        function loadAllMasterDatabaseRecords() {
+            // Load formulations from localStorage or sample fallback
+            const formRaw = localStorage.getItem("fmea_formulations");
+            if (formRaw) {
+                masterFormulations = JSON.parse(formRaw);
+            } else {
+                masterFormulations = [
+                    { id: "form-1", code: "FORM-EPOXY-2026", name: "High Performance Structural Epoxy Adhesive", category: "Epoxy Adhesives", author: "Dr. Sarah Lin (HOD Quality)", status: "Approved" },
+                    { id: "form-2", code: "FORM-PU-8800", name: "Flexible Polyurethane Sealant", category: "Polyurethane Adhesives", author: "Operator Jack", status: "Draft" }
+                ];
+            }
+
+            // Extract DFMEA & PFMEA rows from all formulations
+            masterDFMEA = [];
+            masterPFMEA = [];
+            masterControlPlans = [];
+
+            masterFormulations.forEach(form => {
+                const st = (form.status || 'draft').toLowerCase();
+                const statusMeta = {
+                    formStatus: st,
+                    approvedBy: form.approvedBy || '-',
+                    approvalDate: form.approvalDate || '',
+                    rejectionReason: form.rejectionReason || ''
+                };
+
+                if (form.dfmea) {
+                    ["formulation", "raw_materials", "application", "packaging"].forEach(subtab => {
+                        if (form.dfmea[subtab]) {
+                            form.dfmea[subtab].forEach(item => {
+                                masterDFMEA.push({ ...item, formCode: form.code, formName: form.name, category: form.category, subtab, ...statusMeta });
+                            });
+                        }
+                    });
+                }
+
+                if (form.pfmea) {
+                    ["operations", "process", "logistics", "packing_shipment"].forEach(subtab => {
+                        if (form.pfmea[subtab]) {
+                            form.pfmea[subtab].forEach(item => {
+                                masterPFMEA.push({ ...item, formCode: form.code, formName: form.name, category: form.category, subtab, ...statusMeta });
+                            });
+                        }
+                    });
+                }
+
+                if (form.controlPlan) {
+                    form.controlPlan.forEach(item => {
+                        masterControlPlans.push({ ...item, formCode: form.code, formName: form.name, category: form.category, ...statusMeta });
+                    });
+                }
+            });
+
+            // Load Library
+            const libRaw = localStorage.getItem("fmea_library");
+            if (libRaw) {
+                masterLibrary = JSON.parse(libRaw);
+            } else {
+                masterLibrary = [
+                    { id: "lib-1", excelId: "1", category: "Epoxy Adhesives", section: "raw_material", step: "Bisphenol-A Resin", mode: "High Moisture Content", cause: "Improper raw storage", sev: 8, occ: 4, det: 5, rpn: 160 },
+                    { id: "lib-2", excelId: "2", category: "Polyurethane Adhesives", section: "process", step: "High-Shear Dispersion", mode: "Temperature exceedance > 85°C", cause: "Cooling jacket blockage", sev: 9, occ: 3, det: 4, rpn: 108 }
+                ];
+            }
+
+            // Load Audit Logs
+            const auditRaw = localStorage.getItem("fmea_audit_logs");
+            if (auditRaw) {
+                masterAuditLogs = JSON.parse(auditRaw);
+            } else {
+                masterAuditLogs = [
+                    { id: "aud-1", timestamp: new Date().toISOString(), user: "hod_sarah", action: "Approved Document Revision", details: "Released FORM-EPOXY-2026 Rev 1.0" },
+                    { id: "aud-2", timestamp: new Date().toISOString(), user: "operator_jack", action: "Updated Worksheet RPN", details: "Adjusted Occurrence score on step Mixing Phase" }
+                ];
+            }
+
+            updateKPICards();
+        }
+
+        function updateKPICards() {
+            const total = masterDFMEA.length + masterPFMEA.length + masterControlPlans.length + masterLibrary.length + masterFormulations.length;
+            document.getElementById("kpi-total-records").textContent = total;
+            document.getElementById("kpi-dfmea-count").textContent = masterDFMEA.length;
+            document.getElementById("kpi-pfmea-count").textContent = masterPFMEA.length;
+            document.getElementById("kpi-cp-count").textContent = masterControlPlans.length;
+            document.getElementById("kpi-lib-count").textContent = masterLibrary.length;
+
+            document.getElementById("cnt-dfmea").textContent = masterDFMEA.length;
+            document.getElementById("cnt-pfmea").textContent = masterPFMEA.length;
+            document.getElementById("cnt-cp").textContent = masterControlPlans.length;
+            document.getElementById("cnt-lib").textContent = masterLibrary.length;
+            document.getElementById("cnt-form").textContent = masterFormulations.length;
+            document.getElementById("cnt-audit").textContent = masterAuditLogs.length;
+
+            // Calculate High Risk Items (S >= 8 or RPN >= 100)
+            let highCount = 0;
+            masterDFMEA.forEach(i => { if ((i.sev || 0) >= 8 || (i.rpn || 0) >= 100) highCount++; });
+            masterPFMEA.forEach(i => { if ((i.sev || 0) >= 8 || (i.rpn || 0) >= 100) highCount++; });
+            masterLibrary.forEach(i => { if ((i.sev || 0) >= 8 || (i.rpn || 0) >= 100) highCount++; });
+            document.getElementById("kpi-high-risk-count").textContent = highCount;
+        }
+
+        function getStatusBadgeHTML(status, approvedBy, rejectionReason) {
+            const st = (status || 'draft').toLowerCase();
+            if (st === "approved") {
+                return `<span class="badge-status badge-approved" style="font-weight:700;" title="Approved by: ${approvedBy || 'HOD'}">✓ APPROVED</span>`;
+            } else if (st === "rejected") {
+                return `<span class="badge-status badge-rejected" style="font-weight:700;" title="${rejectionReason || 'Rejected by HOD'}">✕ REJECTED</span>`;
+            } else if (st === "pending") {
+                return `<span class="badge-status badge-pending" style="font-weight:700;" title="Awaiting HOD Review">⏳ PENDING</span>`;
+            } else {
+                return `<span class="badge-status badge-draft">DRAFT</span>`;
+            }
+        }
+
+        function formatSubtabLabel(subtab) {
+            const map = {
+                'formulation': '1. Product Master',
+                'raw_materials': '2. Raw Material Master',
+                'raw_material': '2. Raw Material Master',
+                'application': '3. Application Master',
+                'packaging': '4. Packaging Master',
+                'operations': '5. Process Master',
+                'process': '5. Process Master',
+                'logistics': 'Packing & Logistic Shipment',
+                'packing_shipment': 'Packing & Logistic Shipment'
+            };
+            return map[subtab] || subtab || '-';
+        }
+
+        function setupEventListeners() {
+            // Tab Buttons
+            document.querySelectorAll(".db-tab-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    document.querySelectorAll(".db-tab-btn").forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    currentTab = btn.dataset.dbtab;
+                    renderActiveTab();
+                });
+            });
+
+            // Auto-refresh when tab gains focus
+            window.addEventListener("focus", () => {
+                loadAllMasterDatabaseRecords();
+                renderActiveTab();
+            });
+
+            // Global Search Input
+            document.getElementById("db-search").addEventListener("input", renderActiveTab);
+            document.getElementById("db-filter-family").addEventListener("change", renderActiveTab);
+
+            // Quick Action Select Dropdown Handler
+            const dbActionsSelect = document.getElementById("select-db-actions");
+            if (dbActionsSelect) {
+                dbActionsSelect.addEventListener("change", (e) => {
+                    const val = e.target.value;
+                    if (val === "return_portal") {
+                        window.location.href = "index.html";
+                    } else if (val === "export_pdf") {
+                        window.print();
+                    } else if (val === "export_json") {
+                        exportMasterJSON();
+                    } else if (val === "export_excel") {
+                        exportMasterExcel();
+                    } else if (val === "import_json") {
+                        document.getElementById("db-file-input").click();
+                    }
+                    e.target.value = "";
+                });
+            }
+
+            // Export PDF Report & Printing
+            document.getElementById("btn-db-export-pdf").addEventListener("click", () => {
+                window.print();
+            });
+
+            // Export JSON Backup
+            document.getElementById("btn-db-export-json").addEventListener("click", exportMasterJSON);
+            document.getElementById("btn-db-export-excel").addEventListener("click", exportMasterExcel);
+
+            // Restore Backup JSON
+            const fileInput = document.getElementById("db-file-input");
+            document.getElementById("btn-db-import-json").addEventListener("click", () => fileInput.click());
+            fileInput.addEventListener("change", importMasterJSON);
+        }
+
+        function renderActiveTab() {
+            const query = document.getElementById("db-search").value.toLowerCase().trim();
+            const familyFilter = document.getElementById("db-filter-family").value;
+            const thead = document.getElementById("db-thead");
+            const tbody = document.getElementById("db-tbody");
+            const emptyState = document.getElementById("db-empty-state");
+
+            tbody.innerHTML = "";
+
+            if (currentTab === "dfmea") {
+                thead.innerHTML = `
+                    <tr class="fmea-header-group">
+                        <th style="width: 50px;">#</th>
+                        <th style="width: 140px;">Formulation Code</th>
+                        <th style="width: 130px;">HOD Status</th>
+                        <th style="width: 120px;">FMEA Subtab</th>
+                        <th style="width: 160px;">Ingredient / Element</th>
+                        <th style="width: 160px;">Potential Failure Mode</th>
+                        <th style="width: 160px;">Potential Effect</th>
+                        <th style="width: 50px; text-align: center;">S</th>
+                        <th style="width: 160px;">Potential Cause</th>
+                        <th style="width: 50px; text-align: center;">O</th>
+                        <th style="width: 50px; text-align: center;">D</th>
+                        <th style="width: 60px; text-align: center;">RPN</th>
+                        <th style="width: 160px;">Action / Mitigation</th>
+                    </tr>
+                `;
+
+                let filtered = masterDFMEA.filter(item => {
+                    const matchFam = familyFilter === "all" || item.category === familyFilter;
+                    const matchQ = !query || JSON.stringify(item).toLowerCase().includes(query);
+                    return matchFam && matchQ;
+                });
+
+                if (filtered.length === 0) {
+                    emptyState.style.display = "block";
+                } else {
+                    emptyState.style.display = "none";
+                    filtered.forEach((item, idx) => {
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
+                            <td style="text-align: center; font-weight: 600;">${item.excelId || (idx + 1)}</td>
+                            <td><strong>${item.formCode || '-'}</strong></td>
+                            <td>${getStatusBadgeHTML(item.formStatus, item.approvedBy, item.rejectionReason)}</td>
+                            <td><span class="badge-status badge-draft">${formatSubtabLabel(item.subtab)}</span></td>
+                            <td>${item.item || item.step || '-'}</td>
+                            <td style="color: var(--status-rejected); font-weight: 500;">${item.mode || '-'}</td>
+                            <td>${item.effect || '-'}</td>
+                            <td style="text-align: center; font-weight: 700; color: ${getSevColor(item.sev)}">${item.sev || 1}</td>
+                            <td>${item.cause || '-'}</td>
+                            <td style="text-align: center;">${item.occ || 1}</td>
+                            <td style="text-align: center;">${item.det || 1}</td>
+                            <td style="text-align: center; font-weight: 700; color: ${getRPNColor(item.rpn)}">${item.rpn || 1}</td>
+                            <td>${item.action || '-'}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } else if (currentTab === "pfmea") {
+                thead.innerHTML = `
+                    <tr class="fmea-header-group">
+                        <th style="width: 50px;">#</th>
+                        <th style="width: 140px;">Formulation Code</th>
+                        <th style="width: 130px;">HOD Status</th>
+                        <th style="width: 120px;">Process Subtab</th>
+                        <th style="width: 160px;">Process Step / Operation</th>
+                        <th style="width: 160px;">Potential Failure Mode</th>
+                        <th style="width: 160px;">Potential Effect</th>
+                        <th style="width: 50px; text-align: center;">S</th>
+                        <th style="width: 160px;">Potential Cause</th>
+                        <th style="width: 50px; text-align: center;">O</th>
+                        <th style="width: 50px; text-align: center;">D</th>
+                        <th style="width: 60px; text-align: center;">RPN</th>
+                        <th style="width: 160px;">Action / Mitigation</th>
+                    </tr>
+                `;
+
+                let filtered = masterPFMEA.filter(item => {
+                    const matchFam = familyFilter === "all" || item.category === familyFilter;
+                    const matchQ = !query || JSON.stringify(item).toLowerCase().includes(query);
+                    return matchFam && matchQ;
+                });
+
+                if (filtered.length === 0) {
+                    emptyState.style.display = "block";
+                } else {
+                    emptyState.style.display = "none";
+                    filtered.forEach((item, idx) => {
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
+                            <td style="text-align: center; font-weight: 600;">${item.excelId || (idx + 1)}</td>
+                            <td><strong>${item.formCode || '-'}</strong></td>
+                            <td>${getStatusBadgeHTML(item.formStatus, item.approvedBy, item.rejectionReason)}</td>
+                            <td><span class="badge-status badge-pending">${formatSubtabLabel(item.subtab)}</span></td>
+                            <td>${item.step || '-'}</td>
+                            <td style="color: var(--status-rejected); font-weight: 500;">${item.mode || '-'}</td>
+                            <td>${item.effect || '-'}</td>
+                            <td style="text-align: center; font-weight: 700; color: ${getSevColor(item.sev)}">${item.sev || 1}</td>
+                            <td>${item.cause || '-'}</td>
+                            <td style="text-align: center;">${item.occ || 1}</td>
+                            <td style="text-align: center;">${item.det || 1}</td>
+                            <td style="text-align: center; font-weight: 700; color: ${getRPNColor(item.rpn)}">${item.rpn || 1}</td>
+                            <td>${item.action || '-'}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } else if (currentTab === "control_plans") {
+                thead.innerHTML = `
+                    <tr class="fmea-header-group">
+                        <th style="width: 50px;">#</th>
+                        <th style="width: 140px;">Formulation Code</th>
+                        <th style="width: 130px;">HOD Status</th>
+                        <th style="width: 180px;">Operation / Step</th>
+                        <th style="width: 150px;">Machine / Tooling</th>
+                        <th style="width: 160px;">Control Characteristic</th>
+                        <th style="width: 160px;">Specification / Tolerance</th>
+                        <th style="width: 160px;">Measurement Method</th>
+                        <th style="width: 140px;">Sample Size</th>
+                        <th style="width: 160px;">Control Method</th>
+                    </tr>
+                `;
+
+                let filtered = masterControlPlans.filter(item => {
+                    const matchFam = familyFilter === "all" || item.category === familyFilter;
+                    const matchQ = !query || JSON.stringify(item).toLowerCase().includes(query);
+                    return matchFam && matchQ;
+                });
+
+                if (filtered.length === 0) {
+                    emptyState.style.display = "block";
+                } else {
+                    emptyState.style.display = "none";
+                    filtered.forEach((item, idx) => {
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
+                            <td style="text-align: center; font-weight: 600;">${idx + 1}</td>
+                            <td><strong>${item.formCode || '-'}</strong></td>
+                            <td>${getStatusBadgeHTML(item.formStatus, item.approvedBy, item.rejectionReason)}</td>
+                            <td>${item.op || '-'}</td>
+                            <td>${item.machine || '-'}</td>
+                            <td><strong>${item.char || '-'}</strong></td>
+                            <td>${item.spec || '-'}</td>
+                            <td>${item.method || '-'}</td>
+                            <td>${item.sample || '-'}</td>
+                            <td>${item.control || '-'}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } else if (currentTab === "library") {
+                thead.innerHTML = `
+                    <tr class="fmea-header-group">
+                        <th style="width: 50px;">#</th>
+                        <th style="width: 150px;">Family Category</th>
+                        <th style="width: 140px;">Library Section</th>
+                        <th style="width: 160px;">Step / Ingredient</th>
+                        <th style="width: 160px;">Potential Failure Mode</th>
+                        <th style="width: 50px; text-align: center;">S</th>
+                        <th style="width: 160px;">Potential Cause</th>
+                        <th style="width: 50px; text-align: center;">O</th>
+                        <th style="width: 50px; text-align: center;">D</th>
+                        <th style="width: 60px; text-align: center;">RPN</th>
+                    </tr>
+                `;
+
+                let filtered = masterLibrary.filter(item => {
+                    const matchFam = familyFilter === "all" || item.category === familyFilter;
+                    const matchQ = !query || JSON.stringify(item).toLowerCase().includes(query);
+                    return matchFam && matchQ;
+                });
+
+                if (filtered.length === 0) {
+                    emptyState.style.display = "block";
+                } else {
+                    emptyState.style.display = "none";
+                    filtered.forEach((item, idx) => {
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
+                            <td style="text-align: center; font-weight: 600;">${item.excelId || (idx + 1)}</td>
+                            <td><strong>${item.category || '-'}</strong></td>
+                            <td><span class="badge-status badge-approved">${formatSubtabLabel(item.section)}</span></td>
+                            <td>${item.step || '-'}</td>
+                            <td style="color: var(--status-rejected); font-weight: 500;">${item.mode || '-'}</td>
+                            <td style="text-align: center; font-weight: 700; color: ${getSevColor(item.sev)}">${item.sev || 1}</td>
+                            <td>${item.cause || '-'}</td>
+                            <td style="text-align: center;">${item.occ || 1}</td>
+                            <td style="text-align: center;">${item.det || 1}</td>
+                            <td style="text-align: center; font-weight: 700; color: ${getRPNColor(item.rpn)}">${item.rpn || 1}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } else if (currentTab === "formulations") {
+                thead.innerHTML = `
+                    <tr class="fmea-header-group">
+                        <th style="width: 50px;">#</th>
+                        <th style="width: 160px;">Formulation Code</th>
+                        <th style="width: 230px;">Product Name</th>
+                        <th style="width: 170px;">Chemical Family</th>
+                        <th style="width: 180px;">Author / Prepared By</th>
+                        <th style="width: 130px;">HOD Status</th>
+                        <th style="width: 180px;">Approved / Rejected By</th>
+                    </tr>
+                `;
+
+                let filtered = masterFormulations.filter(item => {
+                    const matchFam = familyFilter === "all" || item.category === familyFilter;
+                    const matchQ = !query || JSON.stringify(item).toLowerCase().includes(query);
+                    return matchFam && matchQ;
+                });
+
+                if (filtered.length === 0) {
+                    emptyState.style.display = "block";
+                } else {
+                    emptyState.style.display = "none";
+                    filtered.forEach((item, idx) => {
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
+                            <td style="text-align: center; font-weight: 600;">${idx + 1}</td>
+                            <td><strong>${item.code || '-'}</strong></td>
+                            <td>${item.name || '-'}</td>
+                            <td>${item.category || '-'}</td>
+                            <td>${item.author || item.preparedBy || '-'}</td>
+                            <td>${getStatusBadgeHTML(item.status, item.approvedBy, item.rejectionReason)}</td>
+                            <td><strong>${item.approvedBy || '-'}</strong></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } else if (currentTab === "audit") {
+                thead.innerHTML = `
+                    <tr class="fmea-header-group">
+                        <th style="width: 50px;">#</th>
+                        <th style="width: 180px;">Timestamp</th>
+                        <th style="width: 160px;">User Account</th>
+                        <th style="width: 220px;">Action Conducted</th>
+                        <th>Modification Scope & Details</th>
+                    </tr>
+                `;
+
+                let filtered = masterAuditLogs.filter(item => {
+                    return !query || JSON.stringify(item).toLowerCase().includes(query);
+                });
+
+                if (filtered.length === 0) {
+                    emptyState.style.display = "block";
+                } else {
+                    emptyState.style.display = "none";
+                    filtered.forEach((item, idx) => {
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
+                            <td style="text-align: center; font-weight: 600;">${idx + 1}</td>
+                            <td style="font-size: 0.75rem; color: var(--text-muted);">${item.timestamp ? new Date(item.timestamp).toLocaleString() : '-'}</td>
+                            <td><strong>${item.user || 'system'}</strong></td>
+                            <td><span class="badge-status badge-pending">${item.action || 'Log'}</span></td>
+                            <td>${item.details || '-'}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            }
+        }
+
+        function getSevColor(sev) {
+            if (!sev) return "var(--text-primary)";
+            if (sev >= 8) return "#dc2626";
+            if (sev >= 6) return "#ea580c";
+            return "#16a34a";
+        }
+
+        function getRPNColor(rpn) {
+            if (!rpn) return "var(--text-primary)";
+            if (rpn >= 100) return "#dc2626";
+            if (rpn >= 60) return "#ea580c";
+            return "#16a34a";
+        }
+
+        function exportMasterJSON() {
+            const masterObj = {
+                exportedAt: new Date().toISOString(),
+                formulations: masterFormulations,
+                library: masterLibrary,
+                auditLogs: masterAuditLogs
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(masterObj, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `fmea_master_database_${Date.now()}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function exportMasterExcel() {
+            if (typeof XLSX === "undefined") {
+                alert("SheetJS library not ready.");
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+
+            const wsDFMEA = XLSX.utils.json_to_sheet(masterDFMEA);
+            XLSX.utils.book_append_sheet(wb, wsDFMEA, "DFMEA Master");
+
+            const wsPFMEA = XLSX.utils.json_to_sheet(masterPFMEA);
+            XLSX.utils.book_append_sheet(wb, wsPFMEA, "PFMEA Master");
+
+            const wsCP = XLSX.utils.json_to_sheet(masterControlPlans);
+            XLSX.utils.book_append_sheet(wb, wsCP, "Control Plans");
+
+            const wsLib = XLSX.utils.json_to_sheet(masterLibrary);
+            XLSX.utils.book_append_sheet(wb, wsLib, "History Library");
+
+            XLSX.writeFile(wb, `Adhesive_FMEA_Master_Database_${Date.now()}.xlsx`);
+        }
+
+        function importMasterJSON(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const parsed = JSON.parse(evt.target.result);
+                    if (parsed.formulations) localStorage.setItem("fmea_formulations", JSON.stringify(parsed.formulations));
+                    if (parsed.library) localStorage.setItem("fmea_library", JSON.stringify(parsed.library));
+                    if (parsed.auditLogs) localStorage.setItem("fmea_audit_logs", JSON.stringify(parsed.auditLogs));
+                    alert("Master Database restored successfully!");
+                    location.reload();
+                } catch (err) {
+                    alert("Invalid JSON Database Backup file.");
+                }
+            };
+            reader.readAsText(file);
+        }
+    </script>
+    <!-- Live Team Sync Module -->
+    <script src="sync.js"></script>
+</body>
+</html>
