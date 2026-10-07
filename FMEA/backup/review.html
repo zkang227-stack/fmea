@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOD Executive Review & Approval Portal - Adhesive FMEA</title>
+    <meta name="description" content="Dedicated Executive HOD Approval Portal for Design FMEA, Process FMEA, and Control Plans. Digitally review, inspect risk metrics, and approve quality compliance documents.">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-light: #f8fafc;
+            --text-primary: #0f172a;
+            --text-muted: #64748b;
+            --primary-blue: #2563eb;
+            --primary-hover: #1d4ed8;
+            --emerald-green: #10b981;
+            --emerald-hover: #059669;
+            --amber-pending: #f59e0b;
+            --rose-danger: #ef4444;
+            --border-color: #cbd5e1;
+            --border-dark: #334155;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: #f1f5f9;
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Executive Top Navigation Bar */
+        .exec-header {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 1.25rem 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.25);
+            border-bottom: 2px solid #334155;
+        }
+
+        .exec-brand {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .exec-logo-seal {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+            border: 2px solid #fef3c7;
+        }
+
+        .exec-title h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .exec-title p {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 0.2rem;
+        }
+
+        .exec-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn-exec {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.15rem;
+            font-family: var(--font-family);
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: var(--radius-md);
+            border: 1px solid transparent;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-exec-secondary {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-exec-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-exec-approve {
+            background-color: var(--emerald-green);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-exec-approve:hover {
+            background-color: var(--emerald-hover);
+        }
+
+        .btn-exec-reject {
+            background-color: #fee2e2;
+            color: #dc2626;
+            border-color: #fca5a5;
+        }
+
+        .btn-exec-reject:hover {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        /* Main Container Layout */
+        .exec-container {
+            max-width: 1600px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 2rem;
+            flex: 1;
+        }
+
+        /* Pending Submissions Sidebar Panel */
+        .queue-panel {
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            height: fit-content;
+        }
+
+        .queue-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        .queue-header h2 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .queue-badge-count {
+            background-color: #fef3c7;
+            color: #d97706;
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.25rem 0.65rem;
+            border-radius: 12px;
+            border: 1px solid #fde68a;
+        }
+
+        .submission-card {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .submission-card:hover {
+            border-color: var(--primary-blue);
+            background-color: #eff6ff;
+            transform: translateY(-2px);
+        }
+
+        .submission-card.active {
+            border-color: var(--primary-blue);
+            background-color: #eff6ff;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+
+        .sub-card-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+
+        .sub-card-meta {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Executive Review Document Panel */
+        .review-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .doc-review-card {
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .doc-review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 1.25rem;
+        }
+
+        .doc-review-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1.25rem;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-md);
+            padding: 1rem 1.25rem;
+        }
+
+        .meta-box span {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .meta-box strong {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        /* High Risk Items Spotlight */
+        .risk-spotlight-box {
+            background-color: #fff1f2;
+            border: 1px solid #fecdd3;
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .risk-spotlight-header {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            color: #be123c;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        /* Document Worksheet Preview Tables */
+        .exec-table-container {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+            max-height: 400px;
+        }
+
+        .exec-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+
+        .exec-table th {
+            background-color: #0f172a;
+            color: white;
+            padding: 0.75rem 0.6rem;
+            font-weight: 600;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        .exec-table td {
+            padding: 0.65rem 0.6rem;
+            border-bottom: 1px solid #e2e8f0;
+            border-right: 1px solid #f1f5f9;
+        }
+
+        .exec-table tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        /* Digital Approval Form Box */
+        .digital-approval-box {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
+        }
+
+        .digital-approval-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 1rem;
+        }
+
+        .digital-approval-header h3 {
+            font-size: 1.1rem;
+            color: white;
+        }
+
+        .form-grid-exec {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+        }
+
+        .input-group-exec {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .input-group-exec label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+
+        .input-exec {
+            width: 100%;
+            padding: 0.65rem 0.85rem;
+            border-radius: var(--radius-md);
+            border: 1px solid #475569;
+            background-color: #1e293b;
+            color: white;
+            font-family: var(--font-family);
+            font-size: 0.88rem;
+            outline: none;
+        }
+
+        .input-exec:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== HOD SECURITY AUTHORIZATION MODAL ==================== -->
+    <div id="fmea-auth-modal" class="modal-overlay active">
+        <div class="modal-container" style="max-width: 440px; background: white; border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.3); width: 90%;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #1e3a8a, #1d4ed8); color: white; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <i data-lucide="shield-check" style="width: 20px; height: 20px; color: #60a5fa;"></i>
+                    <h3 style="color: white; margin: 0; font-size: 1.05rem; font-weight: 700;">HOD Security Authorization</h3>
+                </div>
+                <a href="../index.html" style="background: transparent; border: none; color: white; cursor: pointer; display: flex;">
+                    <i data-lucide="x"></i>
+                </a>
+            </div>
+            <form id="exec-gate-form" onsubmit="return false;">
+                <div class="modal-body" style="padding: 1.5rem;">
+                    <p style="font-size: 0.85rem; color: #475569; margin-bottom: 1.25rem; line-height: 1.4;">
+                        <strong>Confidential Quality Area:</strong> Access to Design FMEA (DFMEA), Process FMEA (PFMEA), and HOD Executive Review Portal requires security password verification.
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                        <label for="exec-gate-pass" style="font-weight: 600; font-size: 0.85rem; color: #1e293b;">HOD Authorization Password</label>
+                        <div style="position: relative;">
+                            <input type="password" id="exec-gate-pass" style="width: 100%; padding: 0.65rem 2.5rem 0.65rem 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem; font-family: var(--font-family);" required placeholder="Enter HOD password (123)...">
+                            <i data-lucide="key-round" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: #94a3b8;"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 0.75rem;">
+                    <a href="../index.html" class="btn-exec btn-exec-secondary" style="color: #475569; border-color: #cbd5e1;">Cancel</a>
+                    <button type="submit" class="btn-exec btn-exec-approve">
+                        <i data-lucide="unlock"></i>
+                        <span>Unlock Worksheets</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Executive Header -->
+    <header class="exec-header">
+        <div class="exec-brand">
+            <div class="exec-logo-seal">
+                <i data-lucide="shield-check" style="width: 26px; height: 26px;"></i>
+            </div>
+            <div class="exec-title">
+                <h1>
+                    <span>HOD Quality Review Portal</span>
+                    <span style="font-size: 0.7rem; background: #f59e0b; color: #000; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 800;">OFFICIAL SIGN-OFF</span>
+                </h1>
+                <p>Adhesive FMEA Enterprise Quality Control & Executive Sign-off Vault</p>
+            </div>
+        </div>
+        <div class="exec-actions">
+            <a href="../index.html" class="btn-exec btn-exec-secondary">
+                <i data-lucide="arrow-left"></i>
+                <span>Return to FMEA Main App</span>
+            </a>
+            <a href="../database.html" class="btn-exec btn-exec-secondary">
+                <i data-lucide="database"></i>
+                <span>Master Database Vault</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="exec-container">
+        
+        <!-- Queue Sidebar -->
+        <aside class="queue-panel">
+            <div class="queue-header">
+                <h2>Pending Submissions</h2>
+                <span class="queue-badge-count" id="badge-pending-count">0 Pending</span>
+            </div>
+
+            <div id="queue-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <!-- Dynamic Queue Cards -->
+            </div>
+
+            <div id="queue-empty" style="display: none; text-align: center; padding: 2rem 0; color: var(--text-muted);">
+                <i data-lucide="check-circle-2" style="width: 40px; height: 40px; color: var(--emerald-green); margin-bottom: 0.5rem;"></i>
+                <p style="font-weight: 600; font-size: 0.9rem;">All Documents Reviewed</p>
+                <p style="font-size: 0.75rem;">No pending HOD approvals in queue.</p>
+            </div>
+        </aside>
+
+        <!-- Executive Inspection & Sign-off Panel -->
+        <section class="review-panel">
+            
+            <!-- Document Inspection Header Card -->
+            <div class="doc-review-card" id="doc-inspection-card">
+                <div class="doc-review-header">
+                    <div>
+                        <span id="doc-type-badge" style="background: #fef3c7; color: #b45309; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 10px; text-transform: uppercase;">Design FMEA (DFMEA)</span>
+                        <h2 id="doc-title-display" style="font-size: 1.35rem; font-weight: 700; margin-top: 0.4rem; color: var(--text-primary);">FORM-EPOXY-2026 - High Performance Structural Epoxy</h2>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">STATUS</span>
+                        <strong id="doc-status-display" style="color: #d97706; font-size: 1.1rem; font-weight: 800;">PENDING HOD APPROVAL</strong>
+                    </div>
+                </div>
+
+                <!-- Document Metadata -->
+                <div class="doc-review-meta">
+                    <div class="meta-box">
+                        <span>Formulation Code</span>
+                        <strong id="meta-code">FORM-EPOXY-2026</strong>
+                    </div>
+                    <div class="meta-box">
+                        <span>Chemical Family</span>
+                        <strong id="meta-category">Epoxy Adhesives</strong>
+                    </div>
+                    <div class="meta-box">
+                        <span>Prepared By</span>
+                        <strong id="meta-author">operator_jack</strong>
+                    </div>
+                    <div class="meta-box">
+                        <span>Revision Stamp</span>
+                        <strong id="meta-rev">Rev 1.0 (Draft Submission)</strong>
+                    </div>
+                </div>
+
+                <!-- High Risk Spotlight Radar Box -->
+                <div class="risk-spotlight-box">
+                    <div class="risk-spotlight-header">
+                        <i data-lucide="shield-alert" style="width: 20px; height: 20px;"></i>
+                        <span>Executive Quality Risk Spotlight (RPN &ge; 100 or S &ge; 8)</span>
+                    </div>
+                    <div id="risk-spotlight-list" style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.82rem;">
+                        <!-- Dynamic High Risk Summary -->
+                    </div>
+                </div>
+
+                <!-- Worksheet Preview Section -->
+                <div>
+                    <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--text-primary);">Document Worksheet Rows Inspection</h3>
+                    <div class="exec-table-container">
+                        <table class="exec-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">#</th>
+                                    <th style="width: 160px;">Item / Process Step</th>
+                                    <th style="width: 160px;">Potential Failure Mode</th>
+                                    <th style="width: 160px;">Potential Effect</th>
+                                    <th style="width: 50px; text-align: center;">S</th>
+                                    <th style="width: 160px;">Potential Cause</th>
+                                    <th style="width: 50px; text-align: center;">O</th>
+                                    <th style="width: 50px; text-align: center;">D</th>
+                                    <th style="width: 60px; text-align: center;">RPN</th>
+                                    <th style="width: 180px;">Action / Mitigation</th>
+                                </tr>
+                            </thead>
+                            <tbody id="exec-tbody">
+                                <!-- Dynamic Preview -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Digital Executive Approval & E-Signature Box -->
+            <div class="digital-approval-box" id="doc-approval-box">
+                <div class="digital-approval-header">
+                    <i data-lucide="pen-tool" style="width: 24px; height: 24px; color: #60a5fa;"></i>
+                    <h3>Digital Executive Sign-Off & Approval Stamp</h3>
+                </div>
+
+                <form id="exec-approval-form" onsubmit="return false;">
+                    <div class="form-grid-exec">
+                        <div class="input-group-exec">
+                            <label for="exec-pass">HOD Security Authorization Password</label>
+                            <input type="password" id="exec-pass" class="input-exec" required placeholder="Enter HOD password (123)...">
+                        </div>
+                        <div class="input-group-exec">
+                            <label for="exec-name">Authorized Digital Signature Name</label>
+                            <input type="text" id="exec-name" class="input-exec" required value="Dr. Sarah Lin (HOD Quality)">
+                        </div>
+                    </div>
+
+                    <div class="input-group-exec" style="margin-top: 1rem;">
+                        <label for="exec-comments">Executive Quality Review Remarks / Instructions</label>
+                        <input type="text" id="exec-comments" class="input-exec" placeholder="e.g. Approved for full production batch manufacturing. All high severity controls verified.">
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                        <button type="button" id="btn-exec-reject" class="btn-exec btn-exec-reject">
+                            <i data-lucide="x-circle"></i>
+                            <span>Reject</span>
+                        </button>
+                        <button type="submit" id="btn-exec-approve" class="btn-exec btn-exec-approve">
+                            <i data-lucide="check-check"></i>
+                            <span>Approve</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- HOD Review Logic -->
+    <script>
+        let formulationsDB = [];
+        let selectedFormId = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadFormulations();
+            setupEventListeners();
+            if (window.lucide) lucide.createIcons();
+        });
+
+        function loadFormulations() {
+            const raw = localStorage.getItem("fmea_formulations");
+            if (raw) {
+                formulationsDB = JSON.parse(raw);
+            } else {
+                formulationsDB = [
+                    {
+                        id: "form-1",
+                        code: "FORM-EPOXY-2026",
+                        name: "High Performance Structural Epoxy Adhesive",
+                        category: "Epoxy Adhesives",
+                        author: "jack@penchem.com",
+                        status: "Pending",
+                        approvedBy: "-",
+                        dfmea: {
+                            raw_materials: [
+                                { excelId: "1", item: "Bisphenol-A Liquid Epoxy Resin", mode: "High Moisture Content", effect: "Reduced tensile strength & slow cure", sev: 8, cause: "Improper raw material storage", occ: 4, det: 5, rpn: 160, action: "Implement incoming vacuum moisture check" }
+                            ]
+                        }
+                    }
+                ];
+            }
+
+            renderQueue();
+        }
+
+        function renderQueue() {
+            const queueList = document.getElementById("queue-list");
+            const queueEmpty = document.getElementById("queue-empty");
+            const pendingCountBadge = document.getElementById("badge-pending-count");
+
+            queueList.innerHTML = "";
+            const pendingItems = formulationsDB.filter(f => f.status === "Pending" || f.status === "Draft");
+            pendingCountBadge.textContent = `${pendingItems.length} Submissions`;
+
+            if (formulationsDB.length === 0) {
+                queueEmpty.style.display = "block";
+                return;
+            }
+            queueEmpty.style.display = "none";
+
+            formulationsDB.forEach((form, idx) => {
+                const isSelected = selectedFormId ? (form.id === selectedFormId) : (idx === 0);
+                if (isSelected) selectedFormId = form.id;
+
+                const card = document.createElement("div");
+                card.className = `submission-card ${isSelected ? 'active' : ''}`;
+                card.onclick = () => selectSubmission(form.id);
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="sub-card-title">${form.code}</span>
+                        <span style="font-size: 0.7rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 10px; background: ${form.status === 'Approved' ? '#dcfce7' : '#fef3c7'}; color: ${form.status === 'Approved' ? '#16a34a' : '#b45309'};">${form.status.toUpperCase()}</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-primary); font-weight: 500;">${form.name}</div>
+                    <div class="sub-card-meta">
+                        <span>By: ${form.author || 'Operator'}</span>
+                        <span>${form.category}</span>
+                    </div>
+                `;
+                queueList.appendChild(card);
+            });
+
+            if (selectedFormId) {
+                renderInspectionPanel(selectedFormId);
+            }
+        }
+
+        function selectSubmission(id) {
+            selectedFormId = id;
+            renderQueue();
+        }
+
+        function renderInspectionPanel(id) {
+            const form = formulationsDB.find(f => f.id === id);
+            if (!form) return;
+
+            document.getElementById("meta-code").textContent = form.code;
+            document.getElementById("meta-category").textContent = form.category;
+            document.getElementById("meta-author").textContent = form.author || "operator_jack";
+            document.getElementById("doc-title-display").textContent = `${form.code} - ${form.name}`;
+            document.getElementById("doc-status-display").textContent = form.status === "Approved" ? "APPROVED BY HOD" : "PENDING HOD APPROVAL";
+            document.getElementById("doc-status-display").style.color = form.status === "Approved" ? "#10b981" : "#d97706";
+
+            // Extract all rows for inspection
+            let rows = [];
+            if (form.dfmea) {
+                ["raw_materials", "formulation", "packaging"].forEach(st => {
+                    if (form.dfmea[st]) rows = rows.concat(form.dfmea[st]);
+                });
+            }
+
+            // High Risk Spotlight
+            const riskList = document.getElementById("risk-spotlight-list");
+            riskList.innerHTML = "";
+            const highRisks = rows.filter(r => (r.sev || 0) >= 8 || (r.rpn || 0) >= 100);
+
+            if (highRisks.length === 0) {
+                riskList.innerHTML = `<div style="color: #15803d; font-weight: 600;">✓ No critical high-risk items detected (All RPN < 100 & Severity < 8)</div>`;
+            } else {
+                highRisks.forEach(r => {
+                    const d = document.createElement("div");
+                    d.style.display = "flex";
+                    d.style.justifySpaceBetween = "space-between";
+                    d.style.alignItems = "center";
+                    d.innerHTML = `
+                        <span><strong>Item:</strong> ${r.item || r.step || '-'} &mdash; <span style="color:#be123c;">${r.mode || '-'}</span></span>
+                        <span style="font-weight:700; color:#be123c; margin-left: auto;">S: ${r.sev || 1} | RPN: ${r.rpn || 1}</span>
+                    `;
+                    riskList.appendChild(d);
+                });
+            }
+
+            // Table Preview Rows
+            const tbody = document.getElementById("exec-tbody");
+            tbody.innerHTML = "";
+            rows.forEach((r, idx) => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td style="text-align: center; font-weight: 600;">${r.excelId || (idx + 1)}</td>
+                    <td><strong>${r.item || r.step || '-'}</strong></td>
+                    <td style="color: #dc2626; font-weight: 500;">${r.mode || '-'}</td>
+                    <td>${r.effect || '-'}</td>
+                    <td style="text-align: center; font-weight: 700; color: ${r.sev >= 8 ? '#dc2626' : '#16a34a'};">${r.sev || 1}</td>
+                    <td>${r.cause || '-'}</td>
+                    <td style="text-align: center;">${r.occ || 1}</td>
+                    <td style="text-align: center;">${r.det || 1}</td>
+                    <td style="text-align: center; font-weight: 700; color: ${r.rpn >= 100 ? '#dc2626' : '#16a34a'};">${r.rpn || 1}</td>
+                    <td>${r.action || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById("exec-gate-form").addEventListener("submit", () => {
+                const pass = document.getElementById("exec-gate-pass").value;
+                if (pass === "123") {
+                    document.getElementById("fmea-auth-modal").classList.remove("active");
+                } else {
+                    alert("Security Verification Failed: Incorrect HOD password. Enter '123'.");
+                }
+            });
+
+            document.getElementById("exec-approval-form").addEventListener("submit", () => handleDecision("Approved"));
+            document.getElementById("btn-exec-reject").addEventListener("click", () => handleDecision("Draft"));
+        }
+
+        function handleDecision(newStatus) {
+            const passVal = document.getElementById("exec-pass").value;
+            const signatureName = document.getElementById("exec-name").value.trim();
+            const comments = document.getElementById("exec-comments").value.trim();
+
+            if (passVal !== "123") {
+                alert("Security Authorization Failed: Incorrect HOD password. Enter '123'.");
+                return;
+            }
+
+            const idx = formulationsDB.findIndex(f => f.id === selectedFormId);
+            if (idx === -1) return;
+
+            const nowStr = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const stLower = newStatus.toLowerCase();
+
+            formulationsDB[idx].status = stLower;
+            formulationsDB[idx].approvedBy = stLower === "approved" ? signatureName : "-";
+            formulationsDB[idx].approvalDate = nowStr;
+            formulationsDB[idx].rejectionReason = comments || (stLower === "approved" ? "Approved" : "HOD requested revision changes.");
+
+            if (stLower === "approved") {
+                if (!formulationsDB[idx].revisionHistory) formulationsDB[idx].revisionHistory = [];
+                formulationsDB[idx].revisionHistory.unshift({
+                    rev: `Rev ${formulationsDB[idx].revision || '1.0'}`,
+                    date: new Date().toLocaleDateString(),
+                    preparedBy: formulationsDB[idx].preparedBy || formulationsDB[idx].author || "operator_jack",
+                    approvedBy: signatureName,
+                    reason: comments || "Official Document Release & Sign-off"
+                });
+            }
+
+            localStorage.setItem("fmea_formulations", JSON.stringify(formulationsDB));
+
+            // Log Audit
+            const auditRaw = localStorage.getItem("fmea_audit_logs");
+            let auditLogs = auditRaw ? JSON.parse(auditRaw) : [];
+            auditLogs.unshift({
+                id: "aud-" + Date.now(),
+                timestamp: new Date().toISOString(),
+                user: signatureName,
+                action: stLower === "approved" ? "HOD Approved Document" : "HOD Rejected Document",
+                details: `${formulationsDB[idx].code}: ${comments || (stLower === "approved" ? "Digital Sign-off complete." : "Returned for corrections.")}`
+            });
+            localStorage.setItem("fmea_audit_logs", JSON.stringify(auditLogs));
+
+            alert(`Document ${formulationsDB[idx].code} successfully set to ${stLower.toUpperCase()}!\nResult is now live in Adhesive FMEA Portal.`);
+            loadFormulations();
+        }
+    </script>
+</body>
+</html>

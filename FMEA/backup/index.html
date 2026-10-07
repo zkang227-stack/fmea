@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FMEA Portal - Enterprise Risk & Quality Control</title>
+    <meta name="description" content="Professional Failure Mode and Effects Analysis (FMEA) interactive spreadsheet and risk assessment dashboard. Calculate Risk Priority Numbers (RPN) dynamically.">
+    <link rel="stylesheet" href="style.css">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SheetJS CDN for direct Excel .xlsx/.xls imports -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+    <!-- ==================== AUTHENTICATION OVERLAY SCREEN ==================== -->
+    <div id="auth-screen" class="auth-container">
+        <!-- Login Card -->
+        <div id="login-card" class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">F</div>
+                <h2>FMEA Portal</h2>
+                <p>Sign in to your quality control workspace</p>
+            </div>
+            <form id="login-form" class="auth-form" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" class="form-input" required placeholder="e.g. operator_jack">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" class="form-input" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem; padding: 0.7rem;">Sign In</button>
+            </form>
+            <div class="auth-toggle">
+                Don't have an account? <a href="#" id="go-to-register">Register here</a>
+            </div>
+        </div>
+
+        <!-- Register Card -->
+        <div id="register-card" class="auth-card" style="display: none;">
+            <div class="auth-header">
+                <div class="auth-logo">A</div>
+                <h2>Create Account</h2>
+                <p>Register a new operator or manager profile</p>
+            </div>
+            <form id="register-form" class="auth-form" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="register-username">Username</label>
+                    <input type="text" id="register-username" class="form-input" required placeholder="e.g. manager_sarah">
+                </div>
+                <div class="form-group">
+                    <label for="register-role">Workspace Role</label>
+                    <select id="register-role" class="select-category-dropdown" required>
+                        <option value="operator">Operator (Preparer / Editor)</option>
+                        <option value="hod">HOD (Head of Department - Approver)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" class="form-input" required placeholder="Min 6 characters">
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem; padding: 0.7rem;">Register Profile</button>
+            </form>
+            <div class="auth-toggle">
+                Already have an profile? <a href="#" id="go-to-login">Sign in instead</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN WORKSPACE SHELL ==================== -->
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">A</div>
+            <div class="sidebar-logo-text">
+                <h1>Adhesive FMEA</h1>
+                <p>QMS Registry Portal</p>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <div data-view="dashboard" class="nav-item active">
+                <i data-lucide="layout-dashboard" style="width: 18px; height: 18px;"></i>
+                <span>Dashboard</span>
+            </div>
+            <div data-view="formulations" class="nav-item">
+                <i data-lucide="flask-conical" style="width: 18px; height: 18px;"></i>
+                <span>Formulations</span>
+            </div>
+            <div data-view="dfmea" class="nav-item">
+                <i data-lucide="layers" style="width: 18px; height: 18px;"></i>
+                <span>Design FMEA (DFMEA)</span>
+            </div>
+            <div data-view="pfmea" class="nav-item">
+                <i data-lucide="activity" style="width: 18px; height: 18px;"></i>
+                <span>Process FMEA (PFMEA)</span>
+            </div>
+            <div data-view="control-plan" class="nav-item">
+                <i data-lucide="file-check-2" style="width: 18px; height: 18px;"></i>
+                <span>Control Plans</span>
+            </div>
+            <div data-view="library" class="nav-item">
+                <i data-lucide="book-marked" style="width: 18px; height: 18px;"></i>
+                <span>History Library</span>
+            </div>
+            <div data-view="families" class="nav-item">
+                <i data-lucide="blocks" style="width: 18px; height: 18px;"></i>
+                <span>Product or Process Families</span>
+            </div>
+            <div data-view="audit" class="nav-item">
+                <i data-lucide="history" style="width: 18px; height: 18px;"></i>
+                <span>Audit & Revisions</span>
+            </div>
+            <div data-view="settings" class="nav-item">
+                <i data-lucide="settings" style="width: 18px; height: 18px;"></i>
+                <span>Settings</span>
+            </div>
+            <a href="database.html" target="_blank" class="nav-item" style="text-decoration: none;" title="Open Master Database Vault">
+                <i data-lucide="database" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                <span style="font-weight: 600; color: var(--primary-color);">Central Database</span>
+            </a>
+            <a href="REVIEW/index.html" target="_blank" class="nav-item" style="text-decoration: none;" title="Open Executive HOD Approval Portal">
+                <i data-lucide="shield-check" style="width: 18px; height: 18px; color: #f59e0b;"></i>
+                <span style="font-weight: 600; color: #d97706;">HOD Review Portal</span>
+            </a>
+        </nav>
+        
+        <!-- Sidebar Footer Logged-in User indicator -->
+        <div class="sidebar-user">
+            <div class="user-avatar" id="avatar-initials">OP</div>
+            <div class="user-details">
+                <div class="user-name" id="display-username">Operator Account</div>
+                <div class="user-role" id="display-role">Operator</div>
+            </div>
+            <button id="btn-logout" class="btn-signout" title="Sign Out" aria-label="Sign Out">
+                <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
+            </button>
+        </div>
+    </aside>
+
+    <!-- App Content Area Wrapper -->
+    <div class="app-content-wrapper">
+        <!-- Top Toolbar Info bar -->
+        <header class="page-top-bar">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <button id="sidebar-collapse-btn" class="btn-icon" title="Toggle Sidebar Menu" aria-label="Toggle Sidebar Menu">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="formulation-select-wrapper">
+                    <span class="info-label" style="margin-bottom: 0;">Active Formulation:</span>
+                    <select id="active-formulation-select" class="formulation-dropdown-select" aria-label="Select active formulation">
+                        <!-- Loaded dynamically -->
+                    </select>
+                </div>
+            </div>
+            
+            <div class="top-bar-actions">
+                <!-- Theme toggle -->
+                <button id="theme-toggle" class="btn-icon" title="Toggle Light/Dark Theme" aria-label="Toggle Light/Dark Theme">
+                    <i data-lucide="sun"></i>
+                </button>
+                <!-- Reference guidelines toggle -->
+                <button id="guidelines-toggle" class="btn btn-secondary" title="FMEA Rating Guidelines">
+                    <i data-lucide="book-open"></i>
+                    <span>Rating Guide</span>
+                </button>
+            </div>
+        </header>
+
+           <!-- ==================== VIEW 1: DASHBOARD ==================== -->
+        <main id="view-dashboard" class="view-panel active">
+            <!-- Welcome Header Panel -->
+            <div class="dashboard-welcome-banner">
+                <div class="welcome-text">
+                    <h2>Hello, <span id="dash-username-greet">User</span></h2>
+                    <p>Adhesive manufacturing quality database & FMEA document control workspace.</p>
+                </div>
+                <div class="welcome-date">
+                    <i data-lucide="calendar" style="width: 16px; height: 16px;"></i>
+                    <span id="dash-current-date">-</span>
+                </div>
+            </div>
+            
+            <!-- HOD Pending Approvals Alert Strip -->
+            <div id="hod-pending-alert" class="pending-alert-card" style="display: none;">
+                <div class="pending-alert-info">
+                    <i data-lucide="alert-triangle"></i>
+                    <span id="pending-alert-text">You have 0 formulations pending sign-off reviews.</span>
+                </div>
+                <button class="btn btn-primary" id="btn-go-formulations" style="background-color: #ea580c;">Go to Reviews</button>
+            </div>
+
+            <!-- KPI Tiles Panel -->
+            <section class="dashboard-metrics" aria-label="FMEA Metrics Summary">
+                <div class="metric-card">
+                    <div class="metric-icon" style="background-color: var(--primary-light); color: var(--primary-color);">
+                        <i data-lucide="flask-conical"></i>
+                    </div>
+                    <div class="metric-info">
+                        <span class="metric-label">Active Formulations</span>
+                        <span id="dash-total-forms" class="metric-value">0</span>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-icon" style="background-color: rgba(2, 132, 199, 0.1); color: var(--status-in-progress);">
+                        <i data-lucide="list-todo"></i>
+                    </div>
+                    <div class="metric-info">
+                        <span class="metric-label">Risk Checkpoints</span>
+                        <span id="dash-total-rows" class="metric-value">0</span>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-icon" style="background-color: rgba(239, 68, 68, 0.1); color: var(--risk-critical);">
+                        <i data-lucide="shield-alert"></i>
+                    </div>
+                    <div class="metric-info">
+                        <span class="metric-label">High/Critical Risks</span>
+                        <span id="dash-crit-risks" class="metric-value">0</span>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-icon" style="background-color: rgba(22, 163, 74, 0.1); color: var(--status-approved);">
+                        <i data-lucide="file-check-2"></i>
+                    </div>
+                    <div class="metric-info">
+                        <span class="metric-label">Released Reports</span>
+                        <span id="dash-approved-count" class="metric-value">0 / 0</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dashboard Analytics Progress Grid -->
+            <section class="dashboard-analytics-row" aria-label="FMEA Analytics Summary">
+                <!-- Product or Process Families -->
+                <div class="analytics-card">
+                    <div class="analytics-card-header">
+                        <h3>Product or Process Families</h3>
+                        <i data-lucide="layers" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+                    </div>
+                    <div class="analytics-list" id="dash-analytics-categories">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Document Statuses -->
+                <div class="analytics-card">
+                    <div class="analytics-card-header">
+                        <h3>Document Release Rate</h3>
+                        <i data-lucide="award" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+                    </div>
+                    <div class="analytics-list" id="dash-analytics-status">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Global Risk Profile breakdown -->
+                <div class="analytics-card">
+                    <div class="analytics-card-header">
+                        <h3>FMEA RPN Distribution</h3>
+                        <i data-lucide="activity" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+                    </div>
+                    <div class="analytics-list" id="dash-analytics-risks">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Formulation Overview grid -->
+            <div class="grid-container">
+                <div class="sidebar-header" style="border-bottom: 1px solid var(--border-color-light); padding: 1rem 1.25rem;">
+                    <h2>Active Formulation Registers</h2>
+                </div>
+                <div class="table-wrapper">
+                    <table class="fmea-table" style="min-width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Formulation Name</th>
+                                <th>Chemical Product Category</th>
+                                <th>Current Revision</th>
+                                <th>Worksheet Status</th>
+                                <th>Preparer (Operator)</th>
+                                <th>HOD Sign-Off</th>
+                                <th>Critical Risks Count</th>
+                                <th style="text-align: center; width: 100px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash-tbody-forms">
+                            <!-- Loaded Dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <!-- ==================== VIEW 2: FORMULATIONS ==================== -->
+        <main id="view-formulations" class="view-panel">
+            <div class="doc-control-header" style="padding: 1rem 1.25rem;">
+                <h2>Formulation Project Manager</h2>
+                <button id="btn-create-formulation" class="btn btn-primary">
+                    <i data-lucide="plus"></i>
+                    <span>New Formulation</span>
+                </button>
+            </div>
+            
+            <div class="formulation-grid" id="formulations-cards-container">
+                <!-- Loaded dynamically -->
+            </div>
+        </main>
+
+        <!-- ==================== VIEW 3: DFMEA (DESIGN FMEA) ==================== -->
+        <main id="view-dfmea" class="view-panel">
+            <!-- Document Control Header -->
+            <div class="doc-control-header">
+                <div class="doc-info-block">
+                    <div class="info-item">
+                        <span class="info-label">Register Type</span>
+                        <span class="info-val" style="color: var(--primary-color); font-weight: 700;">Design FMEA (DFMEA)</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Doc Revision</span>
+                        <span id="dfmea-info-rev" class="info-val">Rev 1.0</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Status</span>
+                        <span id="dfmea-info-status" class="badge-status badge-draft">Draft</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Prepared By</span>
+                        <span id="dfmea-info-preparer" class="info-val">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Approved By</span>
+                        <span id="dfmea-info-approver" class="info-val">-</span>
+                    </div>
+                </div>
+                
+                <div class="action-buttons" id="dfmea-control-actions">
+                    <!-- Buttons loaded dynamically based on status and role -->
+                </div>
+            </div>
+
+            <div id="dfmea-lock-banner" class="workspace-lock-banner" style="display: none;">
+                <i data-lucide="lock" style="width: 16px; height: 16px;"></i>
+                <span id="dfmea-lock-text">Worksheet is locked. Initiating revisions will create a new draft change cycle.</span>
+            </div>
+
+            <!-- Interlink Banner with History Library -->
+            <div class="workspace-interlink-strip" style="background: var(--bg-tertiary); border: 1px solid var(--border-color-light); border-radius: var(--radius-md); padding: 0.6rem 1rem; margin-top: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <i data-lucide="link-2" style="width: 16px; height: 16px; color: var(--primary-color);"></i>
+                    <span style="font-size: 0.8rem; color: var(--text-primary);">
+                        <strong>History Library Interlink Active:</strong> Raw Materials, Formulation & Packaging reference templates directly sync with Design FMEA.
+                    </span>
+                </div>
+                <button id="btn-dfmea-open-library" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;" title="Open History Library for Design FMEA">
+                    <i data-lucide="book-marked" style="width: 13px; height: 13px;"></i>
+                    <span>Open History Library</span>
+                </button>
+            </div>
+
+            <!-- Sub Navigation Tabs (Raw Materials, Formulation, Packaging) -->
+            <div class="tabs-sub-navigation">
+                <button class="sub-tab-btn active" data-subtab="raw_materials">Raw Materials FMEA</button>
+                <button class="sub-tab-btn" data-subtab="formulation">Formulation DFMEA</button>
+                <button class="sub-tab-btn" data-subtab="packaging">Packaging FMEA</button>
+            </div>
+
+            <!-- Subtab action toolbar -->
+            <div class="subtab-toolbar">
+                <div class="subtab-search-wrapper">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="dfmea-search" class="search-input" placeholder="Search Design FMEA elements...">
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary btn-open-import-modal" title="Upload Excel / CSV into worksheet">
+                        <i data-lucide="upload"></i>
+                        <span>Import Excel</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportFMEACSV('dfmea')" title="Export active FMEA sheet to Excel (CSV)">
+                        <i data-lucide="file-spreadsheet"></i>
+                        <span>Export Excel</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.print()" title="Export active FMEA sheet to PDF / Print">
+                        <i data-lucide="printer"></i>
+                        <span>Export PDF</span>
+                    </button>
+                    <button class="btn btn-secondary btn-toggle-picker" title="Pick & Place History library">
+                        <i data-lucide="download-cloud"></i>
+                        <span>Import History</span>
+                    </button>
+                    <button class="btn btn-primary btn-add-row-action">
+                        <i data-lucide="plus"></i>
+                        <span>Add Row</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Spreadsheet table container -->
+            <div class="grid-container">
+                <div class="table-wrapper">
+                    <table class="fmea-table" id="dfmea-table">
+                        <thead>
+                            <tr class="fmea-header-group">
+                                <th rowspan="2" class="col-id" style="width: 50px;">ID</th>
+                                <th rowspan="2" style="width: 150px;">Process Step / Item</th>
+                                <th rowspan="2" style="width: 150px;">Function / Spec</th>
+                                <th rowspan="2" style="width: 150px;">Deep Detail</th>
+                                <th rowspan="2" style="width: 150px;">Characteristic (CTQ/KPC)</th>
+                                <th rowspan="2" style="width: 180px;">Potential Failure Mode</th>
+                                <th rowspan="2" style="width: 180px;">Potential Effect</th>
+                                <th colspan="7" class="header-group-blue" style="text-align: center;">Initial Failure Analysis (Initial Risk Assessment)</th>
+                                <th colspan="2" class="header-group-yellow" style="text-align: center;">Recommended Actions</th>
+                                <th colspan="6" class="header-group-darkblue" style="text-align: center;">FMEA Action Results (Revised Risk Assessment)</th>
+                                <th colspan="2" class="header-group-green" style="text-align: center;">Quality Control Checklist</th>
+                                <th rowspan="2" class="col-ops" style="width: 80px; text-align: center;">Ops</th>
+                            </tr>
+                            <tr>
+                                <th style="width: 50px; text-align: center;" class="rating-header">S</th>
+                                <th style="width: 180px;">Potential Cause</th>
+                                <th style="width: 50px; text-align: center;" class="rating-header">O</th>
+                                <th style="width: 180px;">Current Prevention</th>
+                                <th style="width: 180px;">Current Detection</th>
+                                <th style="width: 50px; text-align: center;" class="rating-header">D</th>
+                                <th style="width: 60px; text-align: center;" class="rpn-header">RPN</th>
+                                <th style="width: 200px;">Action / Mitigation</th>
+                                <th style="width: 150px;">Owner & Target Date</th>
+                                <th style="width: 180px;">Action Taken / Results</th>
+                                <th style="width: 120px;">Date Completed</th>
+                                <th style="width: 50px; text-align: center;" class="rating-header">S</th>
+                                <th style="width: 50px; text-align: center;" class="rating-header">O</th>
+                                <th style="width: 50px; text-align: center;" class="rating-header">D</th>
+                                <th style="width: 60px; text-align: center;" class="rpn-header">RPN</th>
+                                <th style="width: 150px;">Special Concern</th>
+                                <th style="width: 100px; text-align: center;">Case Happened</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dfmea-tbody">
+                            <!-- Dynamic Content -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="dfmea-empty" class="table-empty-state" style="display: none;">
+                    <div class="empty-icon">📂</div>
+                    <h3 class="empty-title">No entries registered</h3>
+                    <p class="empty-subtitle">Add a row manually or pick historical data templates from the Library.</p>
+                </div>
+                <div class="grid-footer">
+                    <span id="dfmea-row-count">0 items displayed</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- ==================== VIEW 4: PFMEA (PROCESS FMEA) ==================== -->
+        <main id="view-pfmea" class="view-panel">
+            <!-- Document Control Header -->
+            <div class="doc-control-header">
+                <div class="doc-info-block">
+                    <div class="info-item">
+                        <span class="info-label">Register Type</span>
+                        <span class="info-val" style="color: var(--primary-color); font-weight: 700;">Process FMEA (PFMEA)</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Doc Revision</span>
+                        <span id="pfmea-info-rev" class="info-val">Rev 1.0</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Status</span>
+                        <span id="pfmea-info-status" class="badge-status badge-draft">Draft</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Prepared By</span>
+                        <span id="pfmea-info-preparer" class="info-val">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Approved By</span>
+                        <span id="pfmea-info-approver" class="info-val">-</span>
+                    </div>
+                </div>
+                
+                <div class="action-buttons" id="pfmea-control-actions">
+                    <!-- Dynamic control actions -->
+                </div>
+            </div>
+
+            <div id="pfmea-lock-banner" class="workspace-lock-banner" style="display: none;">
+                <i data-lucide="lock" style="width: 16px; height: 16px;"></i>
+                <span id="pfmea-lock-text">Worksheet is locked. Initiating revisions will create a new draft change cycle.</span>
+            </div>
+
+            <!-- Interlink Banner with History Library -->
+            <div class="workspace-interlink-strip" style="background: var(--bg-tertiary); border: 1px solid var(--border-color-light); border-radius: var(--radius-md); padding: 0.6rem 1rem; margin-top: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <i data-lucide="link-2" style="width: 16px; height: 16px; color: var(--primary-color);"></i>
+                    <span style="font-size: 0.8rem; color: var(--text-primary);">
+                        <strong>History Library Interlink Active:</strong> Process FMEA & Packing/Logistic Shipment reference templates directly sync with Process FMEA.
+                    </span>
+                </div>
+                <button id="btn-pfmea-open-library" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;" title="Open History Library for Process FMEA">
+                    <i data-lucide="book-marked" style="width: 13px; height: 13px;"></i>
+                    <span>Open History Library</span>
+                </button>
+            </div>
+
+            <!-- Sub Navigation Tabs (Manufacturing, Logistics) -->
+            <div class="tabs-sub-navigation">
+                <button class="sub-tab-btn active" data-subtab="operations">Manufacturing Operations FMEA</button>
+                <button class="sub-tab-btn" data-subtab="logistics">Packing & Logistic Shipment FMEA</button>
+            </div>
+
+            <!-- Subtab action toolbar -->
+            <div class="subtab-toolbar">
+                <div class="subtab-search-wrapper">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="pfmea-search" class="search-input" placeholder="Search Process FMEA elements...">
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary btn-open-import-modal" title="Upload Excel / CSV into worksheet">
+                        <i data-lucide="upload"></i>
+                        <span>Import Excel</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportFMEACSV('pfmea')" title="Export active FMEA sheet to Excel (CSV)">
+                        <i data-lucide="file-spreadsheet"></i>
+                        <span>Export Excel</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.print()" title="Export active FMEA sheet to PDF / Print">
+                        <i data-lucide="printer"></i>
+                        <span>Export PDF</span>
+                    </button>
+                    <button class="btn btn-secondary btn-toggle-picker" title="Pick & Place History library">
+                        <i data-lucide="download-cloud"></i>
+                        <span>Import History</span>
+                    </button>
+                    <button class="btn btn-primary btn-add-row-action">
+                        <i data-lucide="plus"></i>
+                        <span>Add Row</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Spreadsheet table container -->
+            <div class="grid-container">
+                <div class="table-wrapper">
+                    <table class="fmea-table" id="pfmea-table">
+                        <thead>
+                            <tr class="fmea-header-group">
+                                <th rowspan="2" class="col-id" style="width: 50px;">ID</th>
+                                <th rowspan="2" style="width: 150px;">Process Step / Operation</th>
+                                <th rowspan="2" style="width: 150px;">Process Function / Spec</th>
+                                <th rowspan="2" style="width: 150px;">Deep Detail</th>
+                                <th rowspan="2" style="width: 150px;">Characteristic (CTQ/KPC)</th>
+                                <th rowspan="2" style="width: 180px;">Potential Failure Mode</th>
+                                <th rowspan="2" style="width: 180px;">Potential Effect</th>
+                                <th colspan="7" class="header-group-blue" style="text-align: center;">Initial Failure Analysis (Initial Risk Assessment)</th>
+                                <th colspan="2" class="header-group-yellow" style="text-align: center;">Recommended Actions</th>
+                                <th colspan="6" class="header-group-darkblue" style="text-align: center;">FMEA Action Results (Revised Risk Assessment)</th>
+                                <th colspan="2" class="header-group-green" style="text-align: center;">Quality Control Checklist</th>
+                                <th rowspan="2" class="col-ops" style="width: 80px; text-align: center;">Ops</th>
+                            </tr>
+                            <tr>
+                                <th style="width: 50px; text-align: center;" class="rating-header">S</th>
+                                <th style="width: 180px;">Potential Cause</th>
+                                <th style="width: 50px; text-align: center;" class="rating-header">O</th>
+                                <th style="width: 180px;">Current Prevention</th>
+                                <th style="width: 180px;">Current Detection</th>
+                                <th style="width: 50px; text-align: center;" class="rating-header">D</th>
+                                <th style="width: 60px; text-align: center;" class="rpn-header">RPN</th>
+                                <th style="width: 200px;">Action / Mitigation</th>
+                                <th style="width: 150px;">Owner & Target Date</th>
+                                <th style="width: 180px;">Action Taken / Results</th>
+                                <th style="width: 120px;">Date Completed</th>
+                                <th style="width: 50px; text-align: center;" class="rating-header">S</th>
+                                <th style="width: 50px; text-align: center;" class="rating-header">O</th>
+                                <th style="width: 50px; text-align: center;" class="rating-header">D</th>
+                                <th style="width: 60px; text-align: center;" class="rpn-header">RPN</th>
+                                <th style="width: 150px;">Special Concern</th>
+                                <th style="width: 100px; text-align: center;">Case Happened</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pfmea-tbody">
+                            <!-- Dynamic Content -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="pfmea-empty" class="table-empty-state" style="display: none;">
+                    <div class="empty-icon">📂</div>
+                    <h3 class="empty-title">No entries registered</h3>
+                    <p class="empty-subtitle">Add a row manually or pick process templates from the Library.</p>
+                </div>
+                <div class="grid-footer">
+                    <span id="pfmea-row-count">0 items displayed</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- ==================== VIEW 5: CONTROL PLAN ==================== -->
+        <main id="view-control-plan" class="view-panel">
+            <div class="doc-control-header">
+                <div>
+                    <h2>Linked Manufacturing Control Plan</h2>
+                    <p class="rpn-description-text">Quality specifications synced dynamically from Formulation DFMEA and PFMEA.</p>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="window.print()" title="Export Control Plan to PDF / Print">
+                        <i data-lucide="printer"></i>
+                        <span>Export PDF</span>
+                    </button>
+                    <button id="btn-export-cp-csv" class="btn btn-primary" title="Export Control Plan as CSV for Excel">
+                        <i data-lucide="file-spreadsheet"></i>
+                        <span>Export Excel</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lock banner synced from active state -->
+            <div id="cp-lock-banner" class="workspace-lock-banner" style="display: none;">
+                <i data-lucide="lock" style="width: 16px; height: 16px;"></i>
+                <span>Worksheet is read-only. Edit FMEA to update core steps, or change FMEA status to Draft to edit parameters.</span>
+            </div>
+
+            <!-- Control Plan Grid -->
+            <div class="grid-container">
+                <div class="table-wrapper">
+                    <table class="fmea-table control-plan-table" id="control-plan-table">
+                        <thead>
+                            <tr>
+                                <th class="col-id">#</th>
+                                <th class="col-op">Operation / FMEA Step</th>
+                                <th class="col-machine">Machine / Tooling</th>
+                                <th class="col-char">Control Characteristic</th>
+                                <th class="col-spec">Specification / Tolerance</th>
+                                <th class="col-method">Measurement Device / Method</th>
+                                <th class="col-sample">Sample Size & Freq.</th>
+                                <th class="col-control">Control Method</th>
+                                <th class="col-reaction">Reaction Plan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="control-plan-tbody">
+                            <!-- Dynamic Content -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="control-plan-empty" class="table-empty-state" style="display: none;">
+                    <div class="empty-icon">📂</div>
+                    <h3 class="empty-title">Control Plan is empty</h3>
+                    <p class="empty-subtitle">Ensure you have registered steps in your DFMEA/PFMEA tabs first.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- ==================== VIEW 6: HISTORY LIBRARY ==================== -->
+        <main id="view-library" class="view-panel">
+            <div class="doc-control-header">
+                <div>
+                    <h2>Global History & Knowledge Library</h2>
+                    <p class="rpn-description-text">Reference repository of validated historical failure modes used for new formulations.</p>
+                </div>
+                <div class="action-buttons">
+                    <button id="btn-clear-library" class="btn btn-danger" title="Clear all library references">
+                        <i data-lucide="trash-2"></i>
+                        <span>Clear Library</span>
+                    </button>
+                    <button id="btn-restore-library-defaults" class="btn btn-secondary" title="Restore default reference templates">
+                        <i data-lucide="rotate-ccw"></i>
+                        <span>Restore Defaults</span>
+                    </button>
+                    <button id="btn-open-import-lib-modal" class="btn btn-secondary" title="Upload Excel saved as CSV to bulk load historical data">
+                        <i data-lucide="upload"></i>
+                        <span>Import Excel / CSV</span>
+                    </button>
+                    <button id="btn-add-library-item" class="btn btn-primary">
+                        <i data-lucide="plus"></i>
+                        <span>Create Library Item</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Section Tabs for 5 categories -->
+            <div class="tabs-sub-navigation" id="lib-sub-nav" style="margin-top: 1rem; margin-bottom: 0;">
+                <button class="sub-tab-btn active" data-section="raw_material">Raw Material FMEA</button>
+                <button class="sub-tab-btn" data-section="formulation">Formulation FMEA</button>
+                <button class="sub-tab-btn" data-section="packaging">Packaging FMEA</button>
+                <button class="sub-tab-btn" data-section="process">Process FMEA</button>
+                <button class="sub-tab-btn" data-section="packing_shipment">Packing & Shipment FMEA</button>
+            </div>
+
+            <!-- Dual Interlink Banners for DFMEA & PFMEA -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 0.75rem; margin-top: 1rem;">
+                <!-- Interlink Banner 1: DFMEA -->
+                <div class="library-interlink-strip" style="background: var(--bg-tertiary); border: 1px solid var(--border-color-light); border-radius: var(--radius-md); padding: 0.75rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <i data-lucide="link-2" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                        <div>
+                            <strong style="font-size: 0.85rem; color: var(--text-primary);">Design FMEA (DFMEA) Interlink Active</strong>
+                            <p style="font-size: 0.72rem; color: var(--text-muted); margin: 0;">Raw Material FMEA, Formulation FMEA & Packaging FMEA templates directly sync with Design FMEA.</p>
+                        </div>
+                    </div>
+                    <button id="btn-open-active-dfmea" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap;" title="Jump directly to active DFMEA workspace">
+                        <i data-lucide="layers" style="width: 14px; height: 14px;"></i>
+                        <span>Go to Active DFMEA</span>
+                    </button>
+                </div>
+
+                <!-- Interlink Banner 2: PFMEA -->
+                <div class="library-interlink-strip" style="background: var(--bg-tertiary); border: 1px solid var(--border-color-light); border-radius: var(--radius-md); padding: 0.75rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <i data-lucide="link-2" style="width: 18px; height: 18px; color: var(--status-in-progress);"></i>
+                        <div>
+                            <strong style="font-size: 0.85rem; color: var(--text-primary);">Process FMEA (PFMEA) Interlink Active</strong>
+                            <p style="font-size: 0.72rem; color: var(--text-muted); margin: 0;">Process FMEA & Packing/Logistic Shipment FMEA templates directly sync with Process FMEA.</p>
+                        </div>
+                    </div>
+                    <button id="btn-open-active-pfmea" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap;" title="Jump directly to active PFMEA workspace">
+                        <i data-lucide="activity" style="width: 14px; height: 14px;"></i>
+                        <span>Go to Active PFMEA</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Toolbar filters -->
+            <section class="control-toolbar" aria-label="Library Controls" style="border: 1px solid var(--border-color-light); margin-top: 1rem;">
+                <div class="search-filter-group" style="max-width: 100%;">
+                    <div class="search-wrapper" style="min-width: 250px;">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input type="text" id="lib-search" class="search-input" placeholder="Search components, failures, or causes...">
+                    </div>
+                    <select id="lib-filter-category" class="filter-select" aria-label="Filter by Product or Process Category">
+                        <option value="all">All Product or Process Families</option>
+                        <option value="Epoxy Adhesives">Epoxy Adhesives</option>
+                        <option value="Polyurethane Adhesives">Polyurethane Adhesives</option>
+                        <option value="Acrylic & Cyanoacrylate">Acrylic & Cyanoacrylate</option>
+                        <option value="Silicone & UV-Curable">Silicone & UV-Curable</option>
+                        <option value="Hot Melt Adhesives">Hot Melt Adhesives</option>
+                    </select>
+                </div>
+            </section>
+
+            <!-- Table of library references -->
+            <div class="grid-container">
+                <div class="table-wrapper">
+                    <table class="fmea-table" id="library-table">
+                        <thead>
+                            <tr class="fmea-header-group">
+                                <th rowspan="2" class="col-id" style="width: 50px; text-align: center;">#</th>
+                                <th rowspan="2" style="width: 130px;">Product or Process Family</th>
+                                <th rowspan="2" style="width: 150px;">Step/Ingredient</th>
+                                <th rowspan="2" style="width: 150px;">Function/Spec</th>
+                                <th rowspan="2" style="width: 150px;">Deep Detail</th>
+                                <th rowspan="2" style="width: 140px;">Characteristic</th>
+                                <th rowspan="2" style="width: 160px;">Potential Failure Mode</th>
+                                <th rowspan="2" style="width: 160px;">Potential Effect</th>
+                                <th colspan="7" class="header-group-blue" style="text-align: center;">Initial Failure Analysis (Initial Risk Assessment)</th>
+                                <th colspan="2" class="header-group-yellow" style="text-align: center;">Recommended Actions</th>
+                                <th colspan="6" class="header-group-darkblue" style="text-align: center;">FMEA Action Results (Revised Risk Assessment)</th>
+                                <th colspan="2" class="header-group-green" style="text-align: center;">Quality Control Checklist</th>
+                                <th rowspan="2" style="width: 60px; text-align: center;">Ops</th>
+                            </tr>
+                            <tr>
+                                <th style="width: 50px; text-align: center;" class="rating-header">S</th>
+                                <th style="width: 160px;">Potential Cause</th>
+                                <th style="width: 50px; text-align: center;" class="rating-header">O</th>
+                                <th style="width: 150px;">Prevention</th>
+                                <th style="width: 150px;">Detection</th>
+                                <th style="width: 50px; text-align: center;" class="rating-header">D</th>
+                                <th style="width: 60px; text-align: center;" class="rpn-header">RPN</th>
+                                <th style="width: 180px;">Action / Mitigation</th>
+                                <th style="width: 150px;">Owner & Target Date</th>
+                                <th style="width: 180px;">Action Taken / Results</th>
+                                <th style="width: 120px;">Date Completed</th>
+                                <th style="width: 50px; text-align: center;" class="rating-header">S</th>
+                                <th style="width: 50px; text-align: center;" class="rating-header">O</th>
+                                <th style="width: 50px; text-align: center;" class="rating-header">D</th>
+                                <th style="width: 60px; text-align: center;" class="rpn-header">RPN</th>
+                                <th style="width: 120px;">Special Concern</th>
+                                <th style="width: 90px; text-align: center;">Case Happened</th>
+                            </tr>
+                        </thead>
+                        <tbody id="library-tbody">
+                            <!-- Dynamic Content -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="library-empty" class="table-empty-state" style="display: none;">
+                    <div class="empty-icon">📚</div>
+                    <h3 class="empty-title">History library is empty</h3>
+                    <p class="empty-subtitle">Save row items from active worksheets or insert a reference row manually.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- ==================== VIEW 7: AUDIT TRAIL ==================== -->
+        <main id="view-audit" class="view-panel">
+            <div class="page-title">
+                <h2>Traceability Audit Logs & Change Control</h2>
+            </div>
+            
+            <div class="tabs-sub-navigation">
+                <button class="sub-tab-btn active" data-subtab="change_logs">Change Logs (Automated Audit Trail)</button>
+                <button class="sub-tab-btn" data-subtab="revisions">Document Revision Log</button>
+            </div>
+
+            <!-- Tab Content 1: Change logs -->
+            <div id="audit-subtab-change_logs" class="subtab-content-panel">
+                <div class="audit-trail-timeline" id="audit-timeline-container">
+                    <!-- Dynamic logs -->
+                </div>
+                <div id="audit-logs-empty" class="table-empty-state" style="display: none;">
+                    <div class="empty-icon">📋</div>
+                    <h3 class="empty-title">No changes recorded yet</h3>
+                    <p class="empty-subtitle">Modifying spreadsheet cells in Draft mode will record automated tracking audits.</p>
+                </div>
+            </div>
+
+            <!-- Tab Content 2: Revision records -->
+            <div id="audit-subtab-revisions" class="subtab-content-panel" style="display: none;">
+                <div class="grid-container">
+                    <div class="table-wrapper">
+                        <table class="revision-history-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px;">Rev</th>
+                                    <th style="width: 150px;">Release Date</th>
+                                    <th style="width: 150px;">Prepared By</th>
+                                    <th style="width: 150px;">Approved By (HOD)</th>
+                                    <th>Reason for Change / Document Modification Scope</th>
+                                </tr>
+                            </thead>
+                            <tbody id="revisions-tbody">
+                                <!-- Dynamic Content -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="revisions-empty" class="table-empty-state" style="display: none;">
+                        <div class="empty-icon">🔖</div>
+                        <h3 class="empty-title">No document revision history</h3>
+                        <p class="empty-subtitle">Approving draft versions will publish signed revision stamps here.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ==================== VIEW 8: PRODUCT OR PROCESS FAMILIES ==================== -->
+        <main id="view-families" class="view-panel">
+            <div class="doc-control-header">
+                <div>
+                    <h2>Product or Process Family Registry</h2>
+                    <p class="rpn-description-text">Define and register custom chemical adhesive product or process families by yourself, linked to your formulations and reference library filters.</p>
+                </div>
+                <div class="action-buttons">
+                    <button id="btn-add-family" class="btn btn-primary">
+                        <i data-lucide="plus"></i>
+                        <span>Register Product or Process Family</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid-container">
+                <div class="table-wrapper">
+                    <table class="fmea-table" id="families-table" style="min-width: 100%;">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px; text-align: center;">#</th>
+                                <th style="width: 300px;">Product or Process Family Name</th>
+                                <th>Description / Chemical Attributes</th>
+                                <th style="width: 120px; text-align: center;">Ops</th>
+                            </tr>
+                        </thead>
+                        <tbody id="families-tbody">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="families-empty" class="table-empty-state" style="display: none;">
+                    <div class="empty-icon">🧬</div>
+                    <h3 class="empty-title">No Product or Process Families Registered</h3>
+                    <p class="empty-subtitle">Register your own product or process family classes here. They will update throughout the application selects automatically.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- ==================== VIEW 9: SETTINGS ==================== -->
+        <main id="view-settings" class="view-panel">
+            <div class="doc-control-header" style="padding: 1rem 1.25rem;">
+                <h2>System Settings & Authority Controls</h2>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 1.5rem; max-width: 680px;">
+                <!-- Card 1: HOD Password Change -->
+                <div class="formulation-card" style="padding: 1.75rem;">
+                    <div class="analytics-card-header" style="margin-bottom: 1rem;">
+                        <h3>HOD Security Authorization Password</h3>
+                    </div>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5;">
+                        Change the security authorization password used to unlock Design FMEA (DFMEA) and Process FMEA (PFMEA) worksheets.
+                    </p>
+                    <form id="settings-password-form" class="new-formulation-form" onsubmit="return false;">
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="settings-new-pass" style="font-weight: 600;">New Security Authorization Password</label>
+                            <input type="password" id="settings-new-pass" class="form-input" required placeholder="Enter new password (e.g. 123)...">
+                        </div>
+                        <div style="display: flex; justify-content: flex-end;">
+                            <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.25rem;">
+                                <i data-lucide="key-round"></i>
+                                <span>Update Authorization Password</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Card 2: Risk Rating Colors -->
+                <div class="formulation-card" style="padding: 1.75rem;">
+                    <div class="analytics-card-header" style="margin-bottom: 1rem;">
+                        <h3>Authority Risk Color Configuration</h3>
+                    </div>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.5;">
+                        Customize the background color indicators used for Severity, Occurrence, and Detection rating levels across all FMEA spreadsheets and the History Library.
+                    </p>
+                    
+                    <form id="settings-color-form" class="new-formulation-form" onsubmit="return false;">
+                        <div style="display: grid; grid-template-columns: 1fr 120px; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                            <div>
+                                <strong>Critical Risk Color (Scores 9 - 10)</strong>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0.25rem 0 0 0;">Used for extreme risk failure modes requiring immediate design mitigation.</p>
+                            </div>
+                            <input type="color" id="color-crit" class="form-input" style="height: 38px; width: 100%; padding: 2px; cursor: pointer;">
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 120px; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                            <div>
+                                <strong>High Risk Color (Scores 7 - 8)</strong>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0.25rem 0 0 0;">Used for moderate-to-high failure effects or frequencies.</p>
+                            </div>
+                            <input type="color" id="color-high" class="form-input" style="height: 38px; width: 100%; padding: 2px; cursor: pointer;">
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 120px; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                            <div>
+                                <strong>Medium Risk Color (Scores 5 - 6)</strong>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0.25rem 0 0 0;">Used for moderate frequency or secondary effects.</p>
+                            </div>
+                            <input type="color" id="color-medium" class="form-input" style="height: 38px; width: 100%; padding: 2px; cursor: pointer;">
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 120px; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                            <div>
+                                <strong>Low-Medium Risk Color (Scores 3 - 4)</strong>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0.25rem 0 0 0;">Used for low-moderate frequency or minor effects.</p>
+                            </div>
+                            <input type="color" id="color-lowmed" class="form-input" style="height: 38px; width: 100%; padding: 2px; cursor: pointer;">
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 120px; gap: 1rem; align-items: center; margin-bottom: 1.5rem;">
+                            <div>
+                                <strong>Low Risk Color (Scores 1 - 2)</strong>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0.25rem 0 0 0;">Used for highly controlled or negligible risk parameters.</p>
+                            </div>
+                            <input type="color" id="color-low" class="form-input" style="height: 38px; width: 100%; padding: 2px; cursor: pointer;">
+                        </div>
+                        
+                        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                            <button type="button" id="btn-reset-colors" class="btn btn-secondary" style="padding: 0.6rem 1.25rem;">
+                                Reset Defaults
+                            </button>
+                            <button type="submit" id="btn-save-colors" class="btn btn-primary" style="padding: 0.6rem 1.25rem;">
+                                Save Color Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+
+        <!-- ==================== PICK & PLACE LIBRARY EXPLORER SIDEBAR ==================== -->
+        <aside id="library-pick-sidebar" class="sidebar-library-pick collapsed">
+            <div class="sidebar-header">
+                <h2>Import Historical FMEA</h2>
+                <button class="btn-icon btn-toggle-picker" title="Close import panel" aria-label="Close import panel">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            
+            <div class="sidebar-library-content">
+                <p class="rpn-description-text" style="margin-top:0;">Search and copy previously released historical entries directly into your current draft.</p>
+                
+                <div class="library-search-wrapper">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="lib-picker-search" class="search-input" placeholder="Search components, mixing steps...">
+                </div>
+
+                <div class="form-group">
+                    <label for="lib-picker-category">Product or Process Family Scoped:</label>
+                    <select id="lib-picker-category" class="filter-select" style="width: 100%;">
+                        <!-- Dynamic -->
+                    </select>
+                </div>
+                
+                <div class="form-group" style="margin-top: 0.5rem;">
+                    <label for="lib-picker-section">Library FMEA Section:</label>
+                    <select id="lib-picker-section" class="filter-select" style="width: 100%;">
+                        <option value="raw_material">Raw Materials</option>
+                        <option value="formulation">Formulation (DFMEA)</option>
+                        <option value="packaging">Packaging (DFMEA)</option>
+                        <option value="process">Manufacturing Process (PFMEA)</option>
+                        <option value="packing_shipment">Packing & Shipment Logistics</option>
+                    </select>
+                </div>
+                
+                <div class="library-card-list" id="lib-picker-cards">
+                    <!-- Dynamic Cards -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Sidebar floating trigger handle for pick and place drawer -->
+        <button id="library-picker-handle" class="sidebar-toggle-handle btn-toggle-picker" title="Toggle Pick & Place Panel" aria-label="Toggle Pick & Place Panel" style="display: none;">
+            <i data-lucide="arrow-left" id="picker-handle-icon"></i>
+        </button>
+
+        <!-- ==================== FMEA STANDARD REFERENCE SIDEBAR ==================== -->
+        <aside id="reference-sidebar" class="sidebar-reference collapsed" aria-label="FMEA Standard Criteria Tables">
+            <div class="sidebar-header">
+                <h2>S/O/D Rating Tables</h2>
+                <button id="sidebar-close" class="btn-icon" title="Close guide" aria-label="Close guide">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            
+            <div class="sidebar-content">
+                <!-- Severity Section - PFMEA -->
+                <section class="guide-section">
+                    <h3>Severity (S) &mdash; PFMEA <span style="font-weight:400;">(Impact to Plant / Ship-to-Plant / End User)</span></h3>
+                    <div class="rating-grid">
+                        <div class="rating-num" data-num="10">10</div><div class="rating-desc"><strong>High:</strong> Failure may result in an acute health/safety risk for the manufacturing or assembly worker. For the end user: affects safe operation of the vehicle, or the health of the driver, passenger, or road user/pedestrian.</div>
+                        <div class="rating-num" data-num="9">9</div><div class="rating-desc"><strong>High:</strong> Failure may result in in-plant regulatory noncompliance. For the end user: noncompliance with regulations.</div>
+                        <div class="rating-num" data-num="8">8</div><div class="rating-desc"><strong>Moderately High:</strong> 100% of production run affected may have to be scrapped; may result in in-plant regulatory noncompliance or chronic health/safety risk for the worker. Ship-to-plant: shutdown greater than a full production shift, stop shipment possible, field repair/replacement required. End user: loss of primary vehicle function necessary for normal driving.</div>
+                        <div class="rating-num" data-num="7">7</div><div class="rating-desc"><strong>Moderately High:</strong> Product may be sorted and a portion (&lt;100%) scrapped; deviation from primary process, decreased line speed or added manpower. Ship-to-plant: shutdown from 1 hour up to a full shift. End user: degradation of primary vehicle function necessary for normal driving.</div>
+                        <div class="rating-num" data-num="6">6</div><div class="rating-desc"><strong>Moderately Low:</strong> 100% of production run may have to be reworked off-line and accepted. Ship-to-plant: shutdown up to 1 hour. End user: loss of secondary vehicle function.</div>
+                        <div class="rating-num" data-num="5">5</div><div class="rating-desc"><strong>Moderately Low:</strong> A portion of the production run may have to be reworked off-line and accepted; no line shutdown but sort required. End user: degradation of secondary vehicle function.</div>
+                        <div class="rating-num" data-num="4">4</div><div class="rating-desc"><strong>Moderately Low:</strong> 100% of production run may have to be reworked in-station before processing; triggers a significant reaction plan. End user: very objectionable appearance, sound, vibration, harshness, or haptics.</div>
+                        <div class="rating-num" data-num="3">3</div><div class="rating-desc"><strong>Low:</strong> A portion of the production run may have to be reworked in-station before processing; triggers a minor reaction plan. End user: moderately objectionable appearance, sound, vibration, harshness, or haptics.</div>
+                        <div class="rating-num" data-num="2">2</div><div class="rating-desc"><strong>Low:</strong> Slight inconvenience to process, operation, or operator; no reaction plan triggered, feedback to supplier required. End user: slightly objectionable appearance, sound, vibration, harshness, or haptics.</div>
+                        <div class="rating-num" data-num="1">1</div><div class="rating-desc"><strong>Very Low:</strong> No discernible effect.</div>
+                    </div>
+                </section>
+
+                <!-- Severity Section - DFMEA -->
+                <section class="guide-section">
+                    <h3>Severity (S) &mdash; DFMEA <span style="font-weight:400;">(Vehicle Function Only)</span></h3>
+                    <div class="rating-grid">
+                        <div class="rating-num" data-num="10">10</div><div class="rating-desc"><strong>Very High:</strong> Affects safe operation of the vehicle and/or other vehicles, the health of driver or passenger(s), or road users/pedestrians.</div>
+                        <div class="rating-num" data-num="9">9</div><div class="rating-desc">Noncompliance with regulations.</div>
+                        <div class="rating-num" data-num="8">8</div><div class="rating-desc"><strong>High:</strong> Loss of primary vehicle function necessary for normal driving during expected service life.</div>
+                        <div class="rating-num" data-num="7">7</div><div class="rating-desc">Degradation of primary vehicle function necessary for normal driving during expected service life.</div>
+                        <div class="rating-num" data-num="6">6</div><div class="rating-desc"><strong>Moderate:</strong> Loss of secondary vehicle function.</div>
+                        <div class="rating-num" data-num="5">5</div><div class="rating-desc">Degradation of secondary vehicle function.</div>
+                        <div class="rating-num" data-num="4">4</div><div class="rating-desc">Very objectionable appearance, sound, vibration, harshness, or haptics.</div>
+                        <div class="rating-num" data-num="3">3</div><div class="rating-desc"><strong>Low:</strong> Moderately objectionable appearance, sound, vibration, harshness, or haptics.</div>
+                        <div class="rating-num" data-num="2">2</div><div class="rating-desc">Slightly objectionable appearance, sound, vibration, harshness, or haptics.</div>
+                        <div class="rating-num" data-num="1">1</div><div class="rating-desc"><strong>Very Low:</strong> No discernible effect.</div>
+                    </div>
+                </section>
+
+                <!-- Occurrence Section - PFMEA -->
+                <section class="guide-section">
+                    <h3>Occurrence (O) &mdash; PFMEA <span style="font-weight:400;">(Prevention Control Effectiveness)</span></h3>
+                    <div class="rating-grid">
+                        <div class="rating-num" data-num="10">10</div><div class="rating-desc"><strong>Extremely High</strong> (No prevention controls): No prevention controls in place.</div>
+                        <div class="rating-num" data-num="9">9-8</div><div class="rating-desc"><strong>Very High</strong> (Behavioral): Prevention controls will have little effect in preventing the failure cause.</div>
+                        <div class="rating-num" data-num="7">7-6</div><div class="rating-desc"><strong>High</strong> (Behavioral or Technical): Prevention controls are somewhat effective in preventing the failure cause.</div>
+                        <div class="rating-num" data-num="5">5-4</div><div class="rating-desc"><strong>Moderate:</strong> Prevention controls are effective in preventing the failure cause.</div>
+                        <div class="rating-num" data-num="3">3-2</div><div class="rating-desc"><strong>Low / Very Low</strong> (Best Practices): Prevention controls are highly effective in preventing the failure cause.</div>
+                        <div class="rating-num" data-num="1">1</div><div class="rating-desc"><strong>Extremely Low</strong> (Technical): Prevention controls are extremely effective in preventing the failure cause from occurring, due to design (e.g. part geometry) or process (e.g. fixture/tooling design). Failure Mode cannot be physically produced.</div>
+                    </div>
+                </section>
+
+                <!-- Occurrence Section - DFMEA -->
+                <section class="guide-section">
+                    <h3>Occurrence (O) &mdash; DFMEA <span style="font-weight:400;">(Design/Technology Maturity &amp; Field Experience)</span></h3>
+                    <div class="rating-grid">
+                        <div class="rating-num" data-num="10">10</div><div class="rating-desc"><strong>Extremely High:</strong> First application of new technology anywhere without operating experience and/or under uncontrolled operating conditions. No verification/validation experience. Standards and best practices do not yet exist. Prevention controls not able to predict field performance or do not exist.</div>
+                        <div class="rating-num" data-num="9">9</div><div class="rating-desc"><strong>Very High:</strong> First use of design with technical innovations or materials within the company. New application or change in duty cycle/operating conditions. No verification/validation experience. Prevention controls not targeted to identify performance to specific requirements.</div>
+                        <div class="rating-num" data-num="8">8</div><div class="rating-desc"><strong>Very High:</strong> First use of design with technical innovations or materials on a new application. No verification/validation experience. Few existing standards/best practices apply. Prevention controls not a reliable indicator of field performance.</div>
+                        <div class="rating-num" data-num="7">7</div><div class="rating-desc"><strong>High:</strong> New design based on similar technology and materials. New application or change in duty cycle/operating conditions. Standards/best practices apply to the baseline design but not the innovations. Prevention controls provide limited indication of performance.</div>
+                        <div class="rating-num" data-num="6">6</div><div class="rating-desc"><strong>High:</strong> Similar to previous designs using existing technology/materials. Similar application with changes in duty cycle/operating conditions. Previous testing or field experience. Standards/design rules exist but are insufficient to ensure the failure cause won't occur. Prevention controls provide some ability to prevent a failure cause.</div>
+                        <div class="rating-num" data-num="5">5</div><div class="rating-desc"><strong>Moderate:</strong> Detail changes to a previous design using proven technology/materials. Similar application/duty cycle. Previous testing/field experience, or new design with some related test experience. Design addresses lessons learned. Best practices re-evaluated but not yet proven. Prevention controls capable of finding deficiencies and provide some indication of performance.</div>
+                        <div class="rating-num" data-num="4">4</div><div class="rating-desc"><strong>Moderate:</strong> Almost identical design with short-term field exposure. Similar application, minor change in duty cycle/operating conditions. Previous testing or field experience. Predecessor design conforms to best practices, standards, and specifications. Prevention controls capable of finding deficiencies and indicate likely design conformance.</div>
+                        <div class="rating-num" data-num="3">3</div><div class="rating-desc"><strong>Low:</strong> Detail changes to a known design (same application, minor duty-cycle change) and testing/field experience under comparable conditions, or new design with a successfully completed test procedure. Design expected to conform to standards/best practices considering lessons learned. Prevention controls predict conformance of the production design.</div>
+                        <div class="rating-num" data-num="2">2</div><div class="rating-desc"><strong>Very Low:</strong> Almost identical mature design with long field exposure. Same application, comparable duty cycle/operating conditions. Testing/field experience under comparable conditions. Design expected to conform to standards/best practices with significant confidence margin. Prevention controls indicate confidence in design conformance.</div>
+                        <div class="rating-num" data-num="1">1</div><div class="rating-desc"><strong>Extremely Low:</strong> Failure eliminated through prevention control; failure cause is not possible by design.</div>
+                    </div>
+                </section>
+
+                <!-- Detection Section - DFMEA (Table C1.4) -->
+                <section class="guide-section">
+                    <h3>Detection (D) &mdash; DFMEA <span style="font-weight:400;">(Product Design Validation)</span></h3>
+                    <div class="rating-grid">
+                        <div class="rating-num" data-num="10">10</div><div class="rating-desc"><strong>Very Low:</strong> Test procedure yet to be developed; test method not defined.</div>
+                        <div class="rating-num" data-num="9">9</div><div class="rating-desc"><strong>Very Low:</strong> Test method not designed specifically to detect the failure mode or cause (Pass-Fail, Test-to-Failure, Degradation Testing).</div>
+                        <div class="rating-num" data-num="8">8</div><div class="rating-desc"><strong>Low:</strong> New test method, not yet proven (Pass-Fail, Test-to-Failure, Degradation Testing).</div>
+                        <div class="rating-num" data-num="7">7</div><div class="rating-desc"><strong>Low:</strong> Proven test method for verification/validation, but timing is later in the development cycle &mdash; test failures may cause production delays for re-design/re-tooling (Pass-Fail Testing).</div>
+                        <div class="rating-num" data-num="5">6-5</div><div class="rating-desc"><strong>Moderate:</strong> Same maturity as D=7 (timing later in development cycle) &mdash; verified via Test-to-Failure (6) or Degradation Testing (5).</div>
+                        <div class="rating-num" data-num="3">4-2</div><div class="rating-desc"><strong>High:</strong> Proven test method with timing sufficient to modify production tools before release &mdash; Pass-Fail Testing (4), Test-to-Failure (3), or Degradation Testing (2).</div>
+                        <div class="rating-num" data-num="1">1</div><div class="rating-desc"><strong>Very High:</strong> Prior testing confirmed the failure mode/cause cannot occur, or detection methods proven to always detect it.</div>
+                    </div>
+                </section>
+
+                <!-- Detection Section - PFMEA (Table P3) -->
+                <section class="guide-section">
+                    <h3>Detection (D) &mdash; PFMEA <span style="font-weight:400;">(Process Design Validation)</span></h3>
+                    <div class="rating-grid">
+                        <div class="rating-num" data-num="10">10</div><div class="rating-desc"><strong>Very Low:</strong> No testing or inspection method established or known; the failure mode will not or cannot be detected.</div>
+                        <div class="rating-num" data-num="9">9</div><div class="rating-desc"><strong>Very Low:</strong> Unlikely the testing/inspection method will detect the failure mode; not easily caught by random or sporadic audits.</div>
+                        <div class="rating-num" data-num="8">8-7</div><div class="rating-desc"><strong>Low:</strong> Test/inspection method not proven effective/reliable &mdash; human inspection (8) or machine-based inspection equipment (7) that "should" detect the failure.</div>
+                        <div class="rating-num" data-num="5">6-5</div><div class="rating-desc"><strong>Moderate:</strong> Test/inspection method proven effective/reliable &mdash; human inspection (6) or machine-based inspection (5), including product sample checks, that "will" detect the failure.</div>
+                        <div class="rating-num" data-num="3">4-3</div><div class="rating-desc"><strong>High:</strong> Automated detection system proven effective/reliable &mdash; detects downstream (4) or in-station (3), preventing outflow via a robust reject-control system.</div>
+                        <div class="rating-num" data-num="2">2</div><div class="rating-desc"><strong>High:</strong> Machine-based detection proven effective/reliable that detects the cause and prevents the failure mode (discrepant part) from being produced.</div>
+                        <div class="rating-num" data-num="1">1</div><div class="rating-desc"><strong>Very High:</strong> Failure mode cannot be physically produced as-designed/processed, or detection methods proven to always detect it.</div>
+                    </div>
+                </section>
+
+                <!-- Action Priority Section (Table AP) -->
+                <section class="guide-section">
+                    <h3>Action Priority (AP) <span style="font-weight:400;">(Identical for DFMEA and PFMEA)</span></h3>
+                    <div style="overflow-x: auto;">
+                        <table class="ap-table">
+                            <thead>
+                                <tr>
+                                    <th>Effect (S)</th>
+                                    <th>O 8&ndash;10<br>Very High</th>
+                                    <th>O 6&ndash;7<br>High</th>
+                                    <th>O 4&ndash;5<br>Moderate</th>
+                                    <th>O 2&ndash;3<br>Low</th>
+                                    <th>O 1<br>V.Low</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>S 9&ndash;10</strong><br>Very High</td>
+                                    <td>D7-10:H<br>D5-6:H<br>D2-4:H<br>D1:H</td>
+                                    <td>D7-10:H<br>D5-6:H<br>D2-4:H<br>D1:H</td>
+                                    <td>D7-10:H<br>D5-6:H<br>D2-4:H<br>D1:M</td>
+                                    <td>D7-10:H<br>D5-6:M<br>D2-4:L<br>D1:L</td>
+                                    <td>L (all D)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>S 7&ndash;8</strong><br>High</td>
+                                    <td>D7-10:H<br>D5-6:H<br>D2-4:H<br>D1:H</td>
+                                    <td>D7-10:H<br>D5-6:H<br>D2-4:H<br>D1:M</td>
+                                    <td>D7-10:H<br>D5-6:M<br>D2-4:M<br>D1:M</td>
+                                    <td>D7-10:M<br>D5-6:M<br>D2-4:L<br>D1:L</td>
+                                    <td>L (all D)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>S 4&ndash;6</strong><br>Moderate</td>
+                                    <td>D7-10:H<br>D5-6:H<br>D2-4:M<br>D1:M</td>
+                                    <td>D7-10:M<br>D5-6:M<br>D2-4:M<br>D1:L</td>
+                                    <td>D7-10:M<br>D5-6:L<br>D2-4:L<br>D1:L</td>
+                                    <td>D7-10:L<br>D5-6:L<br>D2-4:L<br>D1:L</td>
+                                    <td>L (all D)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>S 2&ndash;3</strong><br>Low</td>
+                                    <td>D7-10:M<br>D5-6:M<br>D2-4:L<br>D1:L</td>
+                                    <td>L (all D)</td>
+                                    <td>L (all D)</td>
+                                    <td>L (all D)</td>
+                                    <td>L (all D)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>S 1</strong><br>No effect</td>
+                                    <td colspan="5">L (all D, all O)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.4; margin: 0.5rem 0 0;">
+                        Example: S=9&ndash;10, O=8&ndash;10, D=1 &rarr; <strong>AP = H</strong>. S=7&ndash;8, O=2&ndash;3, D=1 &rarr; <strong>AP = L</strong>.
+                        Note: the S9&ndash;10 / O4&ndash;5 / D1 cell is <strong>M</strong>, not H, despite the general high-severity rule.
+                    </p>
+                </section>
+            </div>
+        </aside>
+        
+        <!-- Toggle button floating edge handle -->
+        <button id="sidebar-handle" class="sidebar-toggle-handle" title="Toggle Guidelines Panel" aria-label="Toggle Guidelines Panel">
+            <i data-lucide="chevron-left" id="handle-icon"></i>
+        </button>
+    </div>
+
+    <!-- ==================== MODALS LAYERS ==================== -->
+    
+    <!-- Modal 1: New Formulation creation -->
+    <div id="formulation-modal" class="modal-overlay" aria-modal="true" role="dialog">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Add New Adhesive Formulation</h3>
+                <button class="btn-icon btn-close-modal" aria-label="Close dialog">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="formulation-create-form" class="new-formulation-form" onsubmit="return false;">
+                <div class="modal-body">
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="formulation-name">Formulation Name / Code</label>
+                        <input type="text" id="formulation-name" class="form-input" required placeholder="e.g. Epoxy-EP440-S">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="formulation-category">Product or Process Family Category</label>
+                        <select id="formulation-category" class="select-category-dropdown" required>
+                            <option value="Epoxy Adhesives">Epoxy Adhesives</option>
+                            <option value="Polyurethane Adhesives">Polyurethane Adhesives</option>
+                            <option value="Acrylic & Cyanoacrylate">Acrylic & Cyanoacrylate</option>
+                            <option value="Silicone & UV-Curable">Silicone & UV-Curable</option>
+                            <option value="Hot Melt Adhesives">Hot Melt Adhesives</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="formulation-desc">Formulation Specifications Description</label>
+                        <textarea id="formulation-desc" class="modal-reason-textarea" style="height: 80px;" placeholder="e.g. High-temp adhesive structural sealant for aerospace bonding."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-close-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Formulation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Change Request Revision Reason -->
+    <div id="revision-modal" class="modal-overlay" aria-modal="true" role="dialog">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Initiate Document Revision Request</h3>
+                <button class="btn-icon btn-close-modal" aria-label="Close dialog">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="revision-request-form" class="new-formulation-form" onsubmit="return false;">
+                <div class="modal-body">
+                    <p>This released document is currently locked. Requesting a revision will create a new draft (incrementing revision) and record the modification cycle in the Revision History.</p>
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label for="revision-reason"><strong>Reason for Document Revision (Mandatory for Quality Audit)</strong></label>
+                        <textarea id="revision-reason" class="modal-reason-textarea" required placeholder="Describe the change, e.g. Customer request to adjust curing accelerator concentration or machinery replacement."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-close-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Lock & Create Draft Rev</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: HOD Comments sign-off sign-back -->
+    <div id="hod-modal" class="modal-overlay" aria-modal="true" role="dialog">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="hod-modal-title">HOD Worksheet Decision</h3>
+                <button class="btn-icon btn-close-modal" aria-label="Close dialog">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="hod-decision-form" class="new-formulation-form" onsubmit="return false;">
+                <input type="hidden" id="hod-decision-type" value="">
+                <div class="modal-body">
+                    <p id="hod-modal-desc">Review and record sign-off. If rejecting, details are sent to draft preparer.</p>
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label for="hod-comments">Sign-off Comments / Remarks</label>
+                        <textarea id="hod-comments" class="modal-reason-textarea" placeholder="Add HOD review approval remarks or feedback reason for corrections..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-close-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="hod-modal-submit-btn">Release Document</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 4: Library manual item creator -->
+    <div id="lib-modal" class="modal-overlay" aria-modal="true" role="dialog">
+        <div class="modal-container" style="max-width: 550px;">
+            <div class="modal-header">
+                <h3>Add FMEA Reference to Knowledge Library</h3>
+                <button class="btn-icon btn-close-modal" aria-label="Close dialog">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="lib-create-form" class="new-formulation-form" onsubmit="return false;">
+                <div class="modal-body" style="max-height: 450px; overflow-y: auto;">
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-product-cat">Product or Process Family</label>
+                        <select id="lib-product-cat" class="select-category-dropdown" required>
+                            <option value="Epoxy Adhesives">Epoxy Adhesives</option>
+                            <option value="Polyurethane Adhesives">Polyurethane Adhesives</option>
+                            <option value="Acrylic & Cyanoacrylate">Acrylic & Cyanoacrylate</option>
+                            <option value="Silicone & UV-Curable">Silicone & UV-Curable</option>
+                            <option value="Hot Melt Adhesives">Hot Melt Adhesives</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-fmea-section">Library FMEA Section</label>
+                        <select id="lib-fmea-section" class="select-category-dropdown" required>
+                            <option value="raw_material">Raw Material FMEA</option>
+                            <option value="formulation">Formulation FMEA</option>
+                            <option value="packaging">Packaging FMEA</option>
+                            <option value="process">Process FMEA</option>
+                            <option value="packing_shipment">Packing & Shipment FMEA</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-step">Item / Step Name</label>
+                        <input type="text" id="lib-step" class="form-input" required placeholder="e.g. Raw Material Weighing">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-function">Process Function / Specification</label>
+                        <input type="text" id="lib-function" class="form-input" placeholder="e.g. Weigh according to formulation stoichiometry">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-detail">Process Step - Deep Detail</label>
+                        <input type="text" id="lib-detail" class="form-input" placeholder="e.g. Material Identification codes check">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-characteristic">Process Characteristic (CTQ/KPC)</label>
+                        <input type="text" id="lib-characteristic" class="form-input" placeholder="e.g. Correct raw material components">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-mode">Potential Failure Mode</label>
+                        <textarea id="lib-mode" class="form-input" style="height: 45px; resize: none;" required placeholder="e.g. Wrong raw material selected"></textarea>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-effect">Potential Effect of Failure</label>
+                        <textarea id="lib-effect" class="form-input" style="height: 45px; resize: none;" required placeholder="e.g. Wrong formulation, batch rejected"></textarea>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-cause">Potential Causes of Failure</label>
+                        <textarea id="lib-cause" class="form-input" style="height: 45px; resize: none;" required placeholder="e.g. Similar container packaging design"></textarea>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-prevention">Current Prevention Controls</label>
+                        <textarea id="lib-prevention" class="form-input" style="height: 45px; resize: none;" placeholder="e.g. Color coded material labels, approved BOM validation"></textarea>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-detection-controls">Current Detection Controls</label>
+                        <textarea id="lib-detection-controls" class="form-input" style="height: 45px; resize: none;" placeholder="e.g. Supervisor double-check verification checklist"></textarea>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-action">Recommended Action / Improvement</label>
+                        <textarea id="lib-action" class="form-input" style="height: 45px; resize: none;" placeholder="e.g. Warehouse barcode scans matched to recipe feed valves"></textarea>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-resp">Owner & Target Date</label>
+                        <input type="text" id="lib-resp" class="form-input" placeholder="e.g. John Doe, 2026-12-31">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-result">Action Taken & Results</label>
+                        <textarea id="lib-result" class="form-input" style="height: 45px; resize: none;" placeholder="e.g. Installed barcode validation system, verified error rates drop to zero."></textarea>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-result-date">Date Completed</label>
+                        <input type="text" id="lib-result-date" class="form-input" placeholder="e.g. 2026-07-22 or -">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                        <div class="form-group">
+                            <label for="lib-result-sev">Revised S</label>
+                            <select id="lib-result-sev" class="select-category-dropdown">
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="lib-result-occ">Revised O</label>
+                            <select id="lib-result-occ" class="select-category-dropdown">
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="lib-result-det">Revised D</label>
+                            <select id="lib-result-det" class="select-category-dropdown">
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-concern">Special Concern</label>
+                        <input type="text" id="lib-concern" class="form-input" placeholder="e.g. High-temperature safety risk">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="lib-happened">Case Happened Before?</label>
+                        <select id="lib-happened" class="select-category-dropdown">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                        <div class="form-group">
+                            <label for="lib-sev">Severity (S)</label>
+                            <select id="lib-sev" class="select-category-dropdown" required>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="lib-occ">Occurrence (O)</label>
+                            <select id="lib-occ" class="select-category-dropdown" required>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="lib-det">Detection (D)</label>
+                            <select id="lib-det" class="select-category-dropdown" required>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-close-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save to Reference Database</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 5: Import Excel / CSV -->
+    <div id="lib-import-modal" class="modal-overlay" aria-modal="true" role="dialog">
+        <div class="modal-container" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 id="import-modal-title">Import Excel / CSV</h3>
+                <button class="btn-icon btn-close-modal" aria-label="Close dialog">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="max-height: 450px; overflow-y: auto;">
+                <p class="rpn-description-text" style="margin-bottom: 1rem;">
+                    Upload an Excel (<strong>.xlsx / .xls</strong>) or <strong>CSV</strong> file. The system will automatically follow the row numbers (ID / No.) and data columns from your file.
+                </p>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="import-destination-select">Import Destination</label>
+                    <select id="import-destination-select" class="select-category-dropdown">
+                        <option value="active_worksheet">Active Formulation Worksheet</option>
+                        <option value="library">Global History Library</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="lib-csv-file-input">Select Excel or CSV File</label>
+                    <input type="file" id="lib-csv-file-input" accept=".csv,.xlsx,.xls" class="form-input">
+                </div>
+                
+                <div id="lib-csv-preview-area" style="display: none; margin-top: 1rem;">
+                    <h4 style="margin-bottom: 0.5rem; font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted);">Parsed Rows Preview</h4>
+                    <div class="table-wrapper" style="max-height: 200px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                        <table class="fmea-table" id="lib-csv-preview-table" style="min-width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px; text-align: center;">No.</th>
+                                    <th>Step/Ingredient</th>
+                                    <th>Potential Failure Mode</th>
+                                    <th style="width: 50px; text-align: center;">S</th>
+                                    <th style="width: 50px; text-align: center;">O</th>
+                                    <th style="width: 50px; text-align: center;">D</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lib-csv-preview-tbody">
+                                <!-- Previews -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <p id="lib-csv-count-text" style="font-size: 0.8rem; margin-top: 0.5rem; font-weight: 600; color: var(--status-approved);"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-close-modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btn-submit-lib-csv" disabled>Confirm Import</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== DFMEA / PFMEA SECURITY AUTHORIZATION MODAL ==================== -->
+    <div id="fmea-auth-modal" class="modal-overlay">
+        <div class="modal-container" style="max-width: 440px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)); color: white;">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <i data-lucide="shield-check" style="width: 20px; height: 20px; color: #60a5fa;"></i>
+                    <h3 style="color: white; margin: 0; font-size: 1.05rem;">HOD Security Authorization</h3>
+                </div>
+                <button type="button" class="btn-icon btn-close-modal" aria-label="Close dialog" style="background: transparent; border: none; color: white;">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="fmea-auth-form" onsubmit="return false;">
+                <div class="modal-body">
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.4;">
+                        <strong>Confidential Quality Area:</strong> Access to Design FMEA (DFMEA), Process FMEA (PFMEA), and System Settings requires HOD security password verification.
+                    </p>
+                    <div class="form-group">
+                        <label for="fmea-auth-pass-input" style="font-weight: 600;">HOD Authorization Password</label>
+                        <div style="position: relative;">
+                            <input type="password" id="fmea-auth-pass-input" class="form-input" required placeholder="Enter HOD password (123)..." style="width: 100%; padding-right: 2.5rem;">
+                            <i data-lucide="key-round" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-muted);"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-close-modal" id="btn-cancel-fmea-auth">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i data-lucide="unlock"></i>
+                        <span>Unlock Worksheets</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirm Clear All Modal -->
+    <div id="clear-modal" class="modal-overlay" aria-modal="true" role="dialog">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Clear Active Worksheet?</h3>
+                <button class="btn-icon btn-close-modal" aria-label="Close dialog">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to permanently clear all rows in this section for the current active formulation? You will lose unsaved items.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-close-modal">Cancel</button>
+                <button id="btn-confirm-clear" class="btn btn-danger" style="background-color: #ef4444; color: white;">Clear All Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Product or Process Family Modal -->
+    <div id="family-modal" class="modal-overlay" aria-modal="true" role="dialog">
+        <div class="modal-container" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3>Register Product or Process Family</h3>
+                <button class="btn-icon btn-close-modal" aria-label="Close dialog">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="family-create-form" class="new-formulation-form" onsubmit="return false;">
+                <div class="modal-body">
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="family-name">Product or Process Family Name</label>
+                        <input type="text" id="family-name" class="form-input" required placeholder="e.g. Epoxy Structural Adhesives">
+                    </div>
+                    <div class="form-group">
+                        <label for="family-desc">Description / Chemical Attributes</label>
+                        <textarea id="family-desc" class="modal-reason-textarea" style="height: 80px;" placeholder="e.g. Bisphenol-based heat cured structural resins..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-close-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Register Family</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast container for notifications -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <!-- Main Logic Script -->
+    <script src="app.js"></script>
+</body>
+</html>
